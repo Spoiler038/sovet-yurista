@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>ООО ЮК "СОВЕТ ЮРИСТА" — Юридическая защита бизнеса и граждан</title>
-    <link rel="manifest" href="https://spoiler038.github.io/sovet-yurista/manifest.json">
+    <link rel="manifest" href="/sovet-yurista/manifest.json">
     <meta name="theme-color" content="#1C1D21">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -521,7 +521,11 @@
         }
     }
     init();
-    if('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(e=>console.log); }
+    if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sovet-yurista/sw.js')
+    .then(() => console.log('SW registered'))
+    .catch(e => console.log('SW error:', e));
+}
 </script>
 </body>
 </html>
