@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru-RU">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Совет Юриста — Юридическая защита бизнеса и граждан</title>
+    <!-- PWA manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1C1D21">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/2E2F35/FAC643?text=ЮК">
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0B0C10 0%, #1C1D21 100%); color: #ffffff; min-height: 100vh; overflow-x: hidden; }
+        .app-container { max-width: 600px; margin: 0 auto; width: 100%; background: #1C1D21; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; }
+        .main-content { flex: 1; padding: 20px 18px 80px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        /* Bottom navigation */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; background: rgba(28, 29, 33, 0.96); backdrop-filter: blur(12px); display: flex; justify-content: space-around; align-items: center; padding: 8px 12px 14px; border-top: 1px solid rgba(250, 198, 67, 0.2); z-index: 20; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #8E8E93; font-size: 11px; transition: 0.2s; cursor: pointer; flex: 1; padding: 6px 0; border-radius: 16px; }
+        .nav-item i { font-size: 22px; }
+        .nav-item.active { color: #FAC643; background: rgba(250, 198, 67, 0.12); }
+        /* Cards */
+        .card, .glass-card { background: rgba(46, 47, 53, 0.85); border-radius: 28px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(8px); border: 1px solid rgba(250, 198, 67, 0.15); }
+        h2 { font-family: 'Syne', sans-serif; font-size: 1.7rem; margin-bottom: 12px; color: #FAC643; letter-spacing: -0.5px; }
+        h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 10px; }
+        .btn, button { background: linear-gradient(95deg, #FAC643 0%, #E0AD2E 100%); border: none; padding: 12px 24px; border-radius: 60px; font-weight: 600; font-family: 'Poppins', sans-serif; color: #111; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
+        .btn-outline { background: transparent; border: 1.5px solid #FAC643; color: #FAC643; box-shadow: none; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        input, select, textarea { background: #2E2F35; border: 1px solid #3D3E45; border-radius: 40px; padding: 12px 18px; color: white; width: 100%; margin-bottom: 16px; font-family: 'Poppins', sans-serif; transition: 0.2s; }
+        input:focus { border-color: #FAC643; outline: none; }
+        /* Чекбокс согласия */
+        .consent-checkbox { display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; padding: 12px 0; }
+        .consent-checkbox input { width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: #FAC643; flex-shrink: 0; margin-top: 2px; }
+        .consent-checkbox label { font-size: 13px; line-height: 1.4; color: #ddd; }
+        .consent-link { color: #FAC643; text-decoration: none; font-weight: 500; cursor: pointer; border-bottom: 1px dashed #FAC643; }
+        .consent-link:hover { color: #ffd966; }
+        .news-item { border-left: 4px solid #FAC643; padding: 14px 16px; margin-bottom: 14px; background: #25262B; border-radius: 20px; }
+        .slot { background: #2E2F35; border-radius: 40px; padding: 10px 18px; margin: 6px; display: inline-block; cursor: pointer; transition: 0.15s; font-weight: 500; }
+        .slot.free { background: #3A3B44; }
+        .slot.free:active { background: #FAC643; color: #111; transform: scale(0.96);}
+        .slot.booked { opacity: 0.4; cursor: not-allowed; background: #555; }
+        .case-item { background: #25262B; border-radius: 24px; padding: 18px; margin-bottom: 14px; }
+        .status-badge { background: #FAC64320; color: #FAC643; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; display: inline-block; }
+        /* Модальные окна */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s ease; }
+        .modal-container { max-width: 90%; width: 340px; background: linear-gradient(145deg, #25262F, #1C1D24); border-radius: 48px; padding: 28px 24px 32px; text-align: center; border: 1px solid rgba(250,198,67,0.3); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: slideUp 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1); max-height: 80vh; overflow-y: auto; }
+        .modal-container-large { width: 90%; max-width: 500px; text-align: left; }
+        .modal-icon { font-size: 52px; color: #FAC643; margin-bottom: 16px; text-align: center; }
+        .modal-container h3 { font-size: 1.5rem; margin-bottom: 16px; color: #FAC643; text-align: center; }
+        .modal-container p { font-size: 14px; line-height: 1.5; margin-bottom: 12px; color: #e0e0e0; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; justify-content: center; }
+        .modal-buttons button { flex: 1; padding: 12px; font-size: 15px; margin: 0; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; margin: 16px 0; }
+        .cal-day { text-align: center; padding: 10px 0; background: #2E2F35; border-radius: 40px; font-size: 14px; cursor: pointer; transition: 0.1s; }
+        .cal-day.selected { background: #FAC643; color: #111; font-weight: bold; }
+        .time-slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .file-upload { background: #2E2F35; border-radius: 40px; padding: 12px 16px; margin: 8px 0; }
+        hr { border-color: #3D3E45; margin: 16px 0; }
+        .toast-msg { position: fixed; bottom: 90px; left: 20px; right: 20px; max-width: 560px; margin: 0 auto; background: #2E2F35E6; backdrop-filter: blur(12px); padding: 12px 20px; border-radius: 60px; text-align: center; font-weight: 500; z-index: 1100; animation: fadeIn 0.2s; border-left: 5px solid #FAC643; }
+        .map-placeholder { border-radius: 24px; overflow: hidden; margin: 16px 0; }
+        .hidden { display: none !important; }
+        .legal-text-content { white-space: pre-wrap; font-family: monospace; font-size: 12px; background: #1a1a1e; padding: 16px; border-radius: 20px; margin: 12px 0; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+<div class="app-container" id="appRoot">
+    <!-- Экран входа с чекбоксом согласия -->
+    <div id="loginScreen">
+        <div class="glass-card" style="margin: 20px 18px;">
+            <div style="display:flex; justify-content:center; margin-bottom:20px;"><i class="fas fa-gavel" style="font-size:48px; color:#FAC643;"></i></div>
+            <h2 style="text-align:center;">Совет Юриста</h2>
+            <div id="newsFeed"></div>
+            <div class="map-placeholder">
+                <iframe src="https://yandex.ru/map-widget/v1/?ll=36.192233%2C55.702596&z=16&l=map&pt=36.192233,55.702596,pm2rdm" style="height:200px; width:100%; border:0;" allowfullscreen></iframe>
+            </div>
+            <h3 style="margin-top:10px;">Вход в кабинет</h3>
+            <input type="text" id="loginUsername" placeholder="Логин (user / admin)">
+            <input type="password" id="loginPassword" placeholder="Пароль (user / admin)">
+            
+            <!-- Чекбокс согласия на обработку ПД + ссылки -->
+            <div class="consent-checkbox">
+                <input type="checkbox" id="consentCheckbox">
+                <label for="consentCheckbox">
+                    Я ознакомлен и согласен с 
+                    <span class="consent-link" data-doc="personal-data-consent">условиями обработки персональных данных</span>, 
+                    <span class="consent-link" data-doc="privacy-policy">политикой конфиденциальности</span> и 
+                    <span class="consent-link" data-doc="user-agreement">пользовательским соглашением</span>, 
+                    а также даю согласие на хранение и использование cookies.
+                </label>
+            </div>
+            
+            <button id="doLoginBtn" class="btn" style="width:100%" disabled><i class="fas fa-arrow-right-to-bracket"></i> Войти</button>
+            <p style="font-size:12px; margin-top:14px; text-align:center; opacity:0.7;">demo: user/user (клиент) | admin/admin</p>
+        </div>
+    </div>
+
+    <!-- Основное приложение -->
+    <div id="appDashboard" class="hidden" style="display:flex; flex-direction:column; height:100%;">
+        <div class="main-content" id="mainContent"></div>
+        <div class="bottom-nav" id="bottomNav"></div>
+    </div>
+</div>
+
+<script>
+    // ---------- ГЛОБАЛЬНЫЕ ДАННЫЕ ----------
+    let currentUser = null;
+    let allCases = [];
+    let allDocuments = [];
+    let allAppointments = [];
+    let blockedSlots = [];
+    let newsLinks = [];
+    let newsArticles = [];
+
+    // Функция загрузки текста документа из папки /docs/
+    async function loadDocumentContent(docName) {
+        try {
+            const response = await fetch(`/docs/${docName}.txt`);
+            if (!response.ok) throw new Error('Документ не найден');
+            const text = await response.text();
+            return text;
+        } catch (error) {
+            console.error('Ошибка загрузки документа:', error);
+            // Возвращаем текст-заглушку для демонстрации
+            return `[Документ "${docName}.txt" не найден в папке /docs/. Пожалуйста, создайте файл с соответствующим содержимым.\n\nПример содержимого для ${docName}:\n\n1. Общие положения\n2. Цели обработки персональных данных\n3. Права субъекта\n4. Заключительные положения\n\nДата публикации: 01.06.2026 г.`;
+        }
+    }
+
+    // Показать модальное окно с текстом документа
+    function showDocumentModal(title, content) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal-container modal-container-large">
+                <div class="modal-icon"><i class="fas fa-file-alt"></i></div>
+                <h3>${title}</h3>
+                <div class="legal-text-content">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                <div class="modal-buttons">
+                    <button id="modalCloseBtn" class="btn">Закрыть</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        const closeBtn = overlay.querySelector('#modalCloseBtn');
+        const close = () => overlay.remove();
+        closeBtn.onclick = close;
+        overlay.addEventListener('click', (e) => { if(e.target === overlay) close(); });
+    }
+
+    function initMockData() {
+        allCases = [
+            { id: 1, userId: "user", title: "Спор с поставщиком", status: "В процессе", stage: "Подготовка иска", progress: 65, result: null },
+            { id: 2, userId: "user", title: "Защита прав потребителя", status: "Завершено", stage: "Исполнено", progress: 100, result: "Возврат денег + компенсация" },
+            { id: 3, userId: "user", title: "Корпоративный договор", status: "Завершено", stage: "Мировое", progress: 100, result: "Урегулировано" },
+            { id: 4, userId: "admin", title: "Дело ООО Ромашка", status: "В процессе", stage: "Суд", progress: 40, result: null }
+        ];
+        allDocuments = [
+            { id: 101, userId: "user", caseId: 1, fileName: "Исковое заявление.pdf", uploadDate: "2026-05-20", status: "new", adminSeen: false },
+            { id: 102, userId: "user", caseId: 2, fileName: "Решение суда.pdf", uploadDate: "2026-04-10", status: "seen", adminSeen: true },
+        ];
+        allAppointments = [
+            { id: 201, userId: "user", date: "2026-06-15", time: "14:00", clientName: "Иван П.", status: "pending" }
+        ];
+        blockedSlots = [
+            { date: "2026-06-12", time: "10:00" },
+            { date: "2026-06-12", time: "11:00" }
+        ];
+        newsLinks = [{ url: "https://www.consultant.ru", name: "Консультант+" }];
+        newsArticles = [
+            { title: "Изменения в ГК РФ", summary: "Новые правила цифровых прав и защиты потребителей.", date: "2026-06-01" },
+            { title: "Верховный суд о субсидиарной ответственности", summary: "Ужесточение позиции по контролирующим лицам.", date: "2026-05-28" },
+            { title: "Мораторий на проверки бизнеса", summary: "Продлен до 2027 года, поддержка предпринимателей.", date: "2026-05-25" }
+        ];
+    }
+    function persistData() { localStorage.setItem("legalAppData", JSON.stringify({ allCases, allDocuments, allAppointments, blockedSlots, newsLinks, newsArticles, currentUser })); }
+    function loadPersistedData() { const raw = localStorage.getItem("legalAppData"); if(raw) { try { const d=JSON.parse(raw); allCases=d.allCases||allCases; allDocuments=d.allDocuments||allDocuments; allAppointments=d.allAppointments||allAppointments; blockedSlots=d.blockedSlots||blockedSlots; newsLinks=d.newsLinks||newsLinks; newsArticles=d.newsArticles||newsArticles; if(d.currentUser) currentUser=d.currentUser; } catch(e){} } }
+
+    // Модальные окна и тосты
+    function showModal({ title, message, icon = "fas fa-info-circle", onConfirm, confirmText = "OK", showCancel = false, onCancel = null }) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal-container">
+                <div class="modal-icon"><i class="${icon}"></i></div>
+                <h3>${title}</h3>
+                <p style="font-size:15px; line-height:1.4; opacity:0.9;">${message}</p>
+                <div class="modal-buttons">
+                    ${showCancel ? `<button class="btn-outline" id="modalCancelBtn">Отмена</button>` : ''}
+                    <button id="modalConfirmBtn" class="btn">${confirmText}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        const confirmBtn = overlay.querySelector('#modalConfirmBtn');
+        const cancelBtn = overlay.querySelector('#modalCancelBtn');
+        const close = () => overlay.remove();
+        confirmBtn.onclick = () => { if(onConfirm) onConfirm(); close(); };
+        if(cancelBtn) cancelBtn.onclick = () => { if(onCancel) onCancel(); close(); };
+        overlay.addEventListener('click', (e) => { if(e.target === overlay) close(); });
+    }
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.style.borderLeftColor = isError ? '#e74c3c' : '#FAC643';
+        toast.innerHTML = `<i class="${isError ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle'}" style="margin-right:10px;"></i> ${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
+
+    // Новости на экране входа + ИИ сводка
+    function renderNewsOnLogin() {
+        const container = document.getElementById('newsFeed');
+        if(container) {
+            container.innerHTML = newsArticles.map(art => `<div class="news-item"><div class="flex-between"><strong>${art.title}</strong><span style="font-size:10px;">${art.date}</span></div><p style="font-size:13px;">${art.summary}</p></div>`).join('');
+            if(!document.getElementById('aiSummaryBtn')) {
+                const aiBtn = document.createElement('button');
+                aiBtn.className = 'btn-outline';
+                aiBtn.id = 'aiSummaryBtn';
+                aiBtn.innerHTML = '<i class="fas fa-robot"></i> Сводка ИИ';
+                aiBtn.style.margin = '12px 0 0 0';
+                aiBtn.style.width = '100%';
+                aiBtn.onclick = () => showModal({ title: "🤖 Аналитика от ИИ", message: "На основе последних новостей: усиление защиты прав потребителей, послабления для МСП, новые разъяснения ВС РФ по корпоративным спорам. Рекомендуем обновить договорную базу.", icon: "fas fa-brain", confirmText: "Понятно" });
+                container.parentNode.insertBefore(aiBtn, container.nextSibling);
+            }
+        }
+    }
+
+    // Управление чекбоксом и кнопкой входа
+    function setupConsentCheckbox() {
+        const checkbox = document.getElementById('consentCheckbox');
+        const loginBtn = document.getElementById('doLoginBtn');
+        
+        // Обработчики кликабельных ссылок на документы
+        document.querySelectorAll('.consent-link').forEach(link => {
+            link.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const docName = link.dataset.doc;
+                let title = '';
+                switch(docName) {
+                    case 'personal-data-consent': title = 'Согласие на обработку персональных данных'; break;
+                    case 'privacy-policy': title = 'Политика конфиденциальности'; break;
+                    case 'user-agreement': title = 'Пользовательское соглашение'; break;
+                    default: title = 'Юридический документ';
+                }
+                const content = await loadDocumentContent(docName);
+                showDocumentModal(title, content);
+            });
+        });
+        
+        checkbox.addEventListener('change', () => {
+            loginBtn.disabled = !checkbox.checked;
+        });
+    }
+
+    let activeTab = "cases";
+    function renderDashboard() {
+        if(!currentUser) return;
+        const container = document.getElementById('mainContent');
+        const isAdmin = currentUser.role === 'admin';
+        let html = '';
+        if(activeTab === 'cases') {
+            const userCases = allCases.filter(c => c.userId === currentUser.login);
+            const currentCase = userCases.find(c => c.status === "В процессе");
+            const pastCases = userCases.filter(c => c.status !== "В процессе");
+            html = `<div><h2><i class="fas fa-briefcase"></i> Мои дела</h2>`;
+            if(currentCase) html += `<div class="case-item"><div class="flex-between"><h3>${currentCase.title}</h3><span class="status-badge">${currentCase.status}</span></div><p>${currentCase.stage}</p><div style="background:#333; border-radius:30px; height:8px; margin:12px 0;"><div style="width:${currentCase.progress}%; background:#FAC643; height:8px; border-radius:30px;"></div></div><p>Прогресс: ${currentCase.progress}%</p></div>`;
+            else html += `<div class="card">✨ Активных дел нет</div>`;
+            if(pastCases.length) { html += `<h2 style="margin-top:24px;">✅ Завершённые дела</h2>`; pastCases.forEach(c=>{ html+=`<div class="case-item"><strong>${c.title}</strong><p>Результат: ${c.result || 'Завершено'}</p></div>`; });}
+            html += `</div>`;
+        } else if(activeTab === 'calendar') {
+            html = `<div><h2><i class="fas fa-calendar-alt"></i> Запись на приём</h2><div class="card"><div id="simpleCalendar"></div><div id="timeSlotsArea"></div><button id="bookSlotBtn" class="btn" style="margin-top:20px; width:100%;"><i class="fas fa-check"></i> Записаться</button></div><h3>📋 Мои записи</h3><div id="myAppointmentsList"></div></div>`;
+        } else if(activeTab === 'documents') {
+            html = `<div><h2><i class="fas fa-file-alt"></i> Документы</h2><div class="card"><h3>📤 Загрузить документ</h3><select id="docCaseSelect">${allCases.filter(c=>c.userId===currentUser.login).map(c=>`<option value="${c.id}">${c.title}</option>`).join('')}</select><input type="file" id="docFileInput" accept=".pdf,.doc,.jpg,.png"><button id="uploadDocBtn" class="btn" style="width:100%;"><i class="fas fa-cloud-upload-alt"></i> Загрузить</button></div><h3>📁 Загруженные документы</h3><div id="userDocsList"></div></div>`;
+        } else if(activeTab === 'admin' && isAdmin) {
+            const newDocs = allDocuments.filter(d => d.status === 'new' && !d.adminSeen);
+            const newApps = allAppointments.filter(a => a.status === 'pending');
+            html = `<div><h2><i class="fas fa-user-shield"></i> Админ-панель</h2><div class="card"><div class="flex-between"><h3>📄 Новые документы</h3><span class="status-badge">${newDocs.length}</span></div><div id="adminDocsList">${newDocs.map(d=>`<div class="flex-between" style="margin-bottom:10px;"><span><i class="fas fa-file-pdf"></i> ${d.fileName} (${d.userId})</span><button class="btn-outline small-mark" data-id="${d.id}">Просмотрено</button></div>`).join('') || 'Нет новых'}</div><hr><h3>📅 Новые записи</h3><div id="adminAppsList">${newApps.map(a=>`<div class="flex-between" style="margin-bottom:10px;"><span>${a.date} ${a.time} — ${a.clientName}</span><button class="btn-outline small-confirm" data-id="${a.id}">✅ Подтвердить</button></div>`).join('') || 'Нет новых'}</div><hr><h3>🔒 Блокировка слотов</h3><div style="display:flex; gap:8px; flex-wrap:wrap;"><input type="date" id="blockDate" style="flex:1;"><select id="blockTime" style="flex:1;"><option>10:00</option><option>12:00</option><option>14:00</option><option>16:00</option><option>18:00</option></select><button id="addBlockSlotBtn" class="btn">+</button></div><p><small>Заблокировано: ${blockedSlots.map(b=>`${b.date} ${b.time}`).join(', ') || 'нет'}</small></p><hr><h3>🔗 Управление новостными ссылками (ИИ источники)</h3><div id="linksList"></div><div style="display:flex; gap:8px; flex-wrap:wrap;"><input id="newLinkName" placeholder="Название источника" style="flex:1;"><input id="newLinkUrl" placeholder="URL" style="flex:2;"><button id="addLinkBtn" class="btn-outline">Добавить</button></div></div></div>`;
+        } else if(activeTab === 'admin' && !isAdmin) html = `<div class="card"><i class="fas fa-ban"></i> Доступ только администраторам</div>`;
+        container.innerHTML = html;
+        if(activeTab === 'calendar') { renderCalendarUI(); }
+        if(activeTab === 'documents') renderUserDocs();
+        if(activeTab === 'admin' && isAdmin) { renderAdminLinks(); attachAdminEvents(); }
+        attachDynamicEvents();
+    }
+
+    function renderCalendarUI() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const daysInMonth = new Date(year, month+1, 0).getDate();
+        let calHtml = `<div class="cal-grid">${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div style="font-weight:bold;">${d}</div>`).join('')}`;
+        for(let i=0; i<new Date(year, month, 1).getDay()-1; i++) calHtml += `<div></div>`;
+        for(let d=1; d<=daysInMonth; d++) { const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; calHtml += `<div class="cal-day" data-date="${dateStr}">${d}</div>`; }
+        calHtml += `</div>`;
+        document.getElementById('simpleCalendar').innerHTML = calHtml;
+        let selectedDate = null;
+        document.querySelectorAll('.cal-day').forEach(el => { el.addEventListener('click', () => { document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); selectedDate = el.dataset.date; renderTimeSlots(selectedDate); }); });
+        window.renderTimeSlots = (date) => {
+            const slots = ['10:00', '12:00', '14:00', '16:00', '18:00'];
+            const timesDiv = document.getElementById('timeSlotsArea');
+            timesDiv.innerHTML = `<div class="time-slots">${slots.map(t => { const isBlocked = blockedSlots.some(b => b.date === date && b.time === t); const isBooked = allAppointments.some(a => a.date === date && a.time === t && a.userId === currentUser?.login); const disabled = isBlocked || isBooked; return `<div class="slot ${disabled ? 'booked' : 'free'}" data-time="${t}" data-date="${date}">${t} ${disabled ? '🔒 занято' : '✅ свободно'}</div>`; }).join('')}</div>`;
+            document.querySelectorAll('.slot.free').forEach(slot => slot.addEventListener('click', (e) => { document.querySelectorAll('.slot').forEach(s=>s.style.border='none'); slot.style.border = '2px solid #FAC643'; window.selectedSlot = { date: slot.dataset.date, time: slot.dataset.time }; }));
+        };
+        if(document.querySelector('.cal-day.selected')) selectedDate = document.querySelector('.cal-day.selected').dataset.date;
+        if(selectedDate) renderTimeSlots(selectedDate);
+    }
+    function renderUserDocs() { const container = document.getElementById('userDocsList'); if(container) container.innerHTML = allDocuments.filter(d=>d.userId===currentUser.login).map(d=>`<div class="file-upload"><i class="fas fa-file"></i> ${d.fileName} (${d.uploadDate})</div>`).join('') || '<p>Нет документов</p>'; }
+    function renderAdminLinks() { const div = document.getElementById('linksList'); if(div) div.innerHTML = newsLinks.map((l,i)=>`<div class="flex-between" style="margin-bottom:8px;"><span>🔗 <a href="${l.url}" target="_blank" style="color:#FAC643;">${l.name}</a></span><button class="btn-outline del-link" data-idx="${i}" style="padding:6px 12px;">Удалить</button></div>`).join(''); document.querySelectorAll('.del-link').forEach(btn=>{ btn.addEventListener('click',()=>{ newsLinks.splice(parseInt(btn.dataset.idx),1); persistData(); renderAdminLinks(); showToast("Ссылка удалена"); }); }); }
+    function attachAdminEvents() {
+        document.getElementById('addBlockSlotBtn')?.addEventListener('click',()=>{ const date=document.getElementById('blockDate').value, time=document.getElementById('blockTime').value; if(date&&time&&!blockedSlots.some(b=>b.date===date&&b.time===time)){ blockedSlots.push({date,time}); persistData(); showToast(`Слот ${date} ${time} заблокирован`); renderDashboard(); } else showToast("Неверные данные или уже заблокирован",true); });
+        document.getElementById('addLinkBtn')?.addEventListener('click',()=>{ const name=document.getElementById('newLinkName').value, url=document.getElementById('newLinkUrl').value; if(name&&url){ newsLinks.push({name,url}); persistData(); renderAdminLinks(); showToast("Источник добавлен"); } else showToast("Заполните оба поля",true); });
+        document.querySelectorAll('.small-mark').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const docId=parseInt(btn.dataset.id); const doc=allDocuments.find(d=>d.id===docId); if(doc){ doc.adminSeen=true; doc.status='seen'; persistData(); renderDashboard(); showToast("Документ отмечен как просмотренный"); } }); });
+        document.querySelectorAll('.small-confirm').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const appId=parseInt(btn.dataset.id); const app=allAppointments.find(a=>a.id===appId); if(app){ app.status='confirmed'; persistData(); renderDashboard(); showToast("Запись подтверждена"); } }); });
+    }
+    function attachDynamicEvents() {
+        if(activeTab === 'documents') {
+            document.getElementById('uploadDocBtn')?.addEventListener('click',()=>{ const fileInput=document.getElementById('docFileInput'), caseId=document.getElementById('docCaseSelect')?.value; if(fileInput.files.length && caseId){ const file=fileInput.files[0]; allDocuments.push({ id:Date.now(), userId:currentUser.login, caseId:parseInt(caseId), fileName:file.name, uploadDate:new Date().toISOString().slice(0,10), status:'new', adminSeen:false }); persistData(); showModal({ title:"✅ Документ загружен", message:`"${file.name}" успешно загружен. Администратор получит уведомление.`, icon:"fas fa-check-circle", confirmText:"Отлично" }); renderDashboard();} else showToast("Выберите файл и дело",true); });
+        }
+        if(activeTab === 'calendar') {
+            document.getElementById('bookSlotBtn')?.addEventListener('click',()=>{ if(window.selectedSlot && window.selectedSlot.date && window.selectedSlot.time){ const {date,time}=window.selectedSlot; const already=allAppointments.some(a=>a.date===date&&a.time===time && a.userId===currentUser.login); const blocked=blockedSlots.some(b=>b.date===date&&b.time===time); if(already) showToast("Вы уже записаны на это время",true); else if(blocked) showToast("Слот занят администратором",true); else { allAppointments.push({ id:Date.now(), userId:currentUser.login, date, time, clientName:currentUser.login, status:'pending' }); persistData(); showModal({ title:"📅 Запись создана", message:`Вы записаны на ${date} в ${time}. Ожидайте подтверждения администратора.`, icon:"fas fa-calendar-check", confirmText:"Понятно" }); renderDashboard(); } } else showToast("Выберите свободное время",true); });
+            const myApps = allAppointments.filter(a=>a.userId===currentUser.login); const listDiv=document.getElementById('myAppointmentsList'); if(listDiv) listDiv.innerHTML = myApps.map(a=>`<div class="card"><i class="fas fa-clock"></i> ${a.date} ${a.time} — статус: ${a.status==='pending'?'⏳ ожидает':'✅ подтверждён'}</div>`).join('');
+        }
+    }
+
+    function setupNavigation() {
+        const navItems = document.querySelectorAll('.nav-item');
+        const updateTab = (tabId) => { activeTab = tabId; renderDashboard(); navItems.forEach(item=>{ if(item.dataset.tab===tabId) item.classList.add('active'); else item.classList.remove('active'); }); history.pushState({tab:tabId},'',`#${tabId}`); };
+        navItems.forEach(item=>item.addEventListener('click',()=>updateTab(item.dataset.tab)));
+        window.addEventListener('popstate',(e)=>{ const tab=e.state?.tab||'cases'; activeTab=tab; renderDashboard(); navItems.forEach(item=>{ if(item.dataset.tab===tab) item.classList.add('active'); else item.classList.remove('active'); }); });
+        let touchStartX=0; document.getElementById('appDashboard')?.addEventListener('touchstart',(e)=>{ touchStartX=e.changedTouches[0].screenX; });
+        document.getElementById('appDashboard')?.addEventListener('touchend',(e)=>{ const diff=e.changedTouches[0].screenX - touchStartX; const order=['cases','calendar','documents']; if(currentUser?.role==='admin') order.push('admin'); const idx=order.indexOf(activeTab); if(diff>50 && idx>0) updateTab(order[idx-1]); if(diff<-50 && idx<order.length-1) updateTab(order[idx+1]); });
+    }
+    function buildBottomNav() {
+        const navDiv = document.getElementById('bottomNav');
+        const isAdmin = currentUser?.role === 'admin';
+        const tabs = [{id:'cases',icon:'fas fa-gavel',label:'Дела'},{id:'calendar',icon:'fas fa-calendar-alt',label:'Календарь'},{id:'documents',icon:'fas fa-file-alt',label:'Документы'}];
+        if(isAdmin) tabs.push({id:'admin',icon:'fas fa-user-shield',label:'Админ'});
+        navDiv.innerHTML = tabs.map(tab=>`<div class="nav-item ${activeTab===tab.id?'active':''}" data-tab="${tab.id}"><i class="${tab.icon}"></i><span>${tab.label}</span></div>`).join('');
+        setupNavigation();
+    }
+
+    async function handleLogin() {
+        const login = document.getElementById('loginUsername').value.trim();
+        const pass = document.getElementById('loginPassword').value.trim();
+        const consentChecked = document.getElementById('consentCheckbox').checked;
+        
+        if(!consentChecked) {
+            showModal({ title: "Требуется согласие", message: "Для входа в личный кабинет необходимо ознакомиться и принять условия обработки персональных данных, политику конфиденциальности и пользовательское соглашение.", icon: "fas fa-shield-alt", confirmText: "Понятно" });
+            return;
+        }
+        
+        if((login === 'user' && pass === 'user') || (login === 'admin' && pass === 'admin')) {
+            currentUser = { login, role: login === 'admin' ? 'admin' : 'user', id: login };
+            persistData();
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appDashboard').classList.remove('hidden');
+            activeTab = 'cases';
+            buildBottomNav();
+            renderDashboard();
+            showToast(`Добро пожаловать, ${login === 'admin' ? 'Администратор' : 'Клиент'}!`);
+        } else { showModal({ title:"Ошибка входа", message:"Неверный логин или пароль.\n\nДоступные учётные данные:\nКлиент: user / user\nАдмин: admin / admin", icon:"fas fa-lock", confirmText:"Попробовать снова" }); }
+    }
+
+    async function init() {
+        initMockData(); loadPersistedData(); renderNewsOnLogin();
+        setupConsentCheckbox();
+        document.getElementById('doLoginBtn').onclick = handleLogin;
+        if(currentUser) { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appDashboard').classList.remove('hidden'); buildBottomNav(); renderDashboard(); }
+    }
+    init();
+    // PWA Service Worker
+    if('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(e=>console.log); }
+</script>
+</body>
+</html>
