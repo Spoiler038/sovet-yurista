@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Совет Юриста — Юридическая защита бизнеса и граждан</title>
+    <title>ООО ЮК "СОВЕТ ЮРИСТА" — Юридическая защита бизнеса и граждан</title>
     <!-- PWA manifest -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="https://spoiler038.github.io/sovet-yurista/manifest.json">
     <meta name="theme-color" content="#1C1D21">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/2E2F35/FAC643?text=ЮК">
+    <link rel="apple-touch-icon" href="https://spoiler038.github.io/sovet-yurista/icons/favicon.svg">
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -38,7 +38,27 @@
         .consent-checkbox label { font-size: 13px; line-height: 1.4; color: #ddd; }
         .consent-link { color: #FAC643; text-decoration: none; font-weight: 500; cursor: pointer; border-bottom: 1px dashed #FAC643; }
         .consent-link:hover { color: #ffd966; }
-        .news-item { border-left: 4px solid #FAC643; padding: 14px 16px; margin-bottom: 14px; background: #25262B; border-radius: 20px; }
+        /* Анимированные новости (выезжают сбоку) */
+        .news-item {
+            border-left: 4px solid #FAC643;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            background: #25262B;
+            border-radius: 20px;
+            opacity: 0;
+            transform: translateX(-30px);
+            animation: slideInNews 0.4s ease forwards;
+            transition: all 0.3s;
+        }
+        .news-item:nth-child(1) { animation-delay: 0.05s; }
+        .news-item:nth-child(2) { animation-delay: 0.15s; }
+        .news-item:nth-child(3) { animation-delay: 0.25s; }
+        .news-item:nth-child(4) { animation-delay: 0.35s; }
+        .news-item:nth-child(5) { animation-delay: 0.45s; }
+        @keyframes slideInNews {
+            from { opacity: 0; transform: translateX(-40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
         .slot { background: #2E2F35; border-radius: 40px; padding: 10px 18px; margin: 6px; display: inline-block; cursor: pointer; transition: 0.15s; font-weight: 500; }
         .slot.free { background: #3A3B44; }
         .slot.free:active { background: #FAC643; color: #111; transform: scale(0.96);}
@@ -67,6 +87,9 @@
         .map-placeholder { border-radius: 24px; overflow: hidden; margin: 16px 0; }
         .hidden { display: none !important; }
         .legal-text-content { white-space: pre-wrap; font-family: monospace; font-size: 12px; background: #1a1a1e; padding: 16px; border-radius: 20px; margin: 12px 0; max-height: 400px; overflow-y: auto; }
+        .logo-icon { font-size: 52px; color: #FAC643; filter: drop-shadow(0 0 6px rgba(250,198,67,0.3)); transition: all 0.3s; }
+        .logo-icon:hover { transform: scale(1.02); filter: drop-shadow(0 0 12px #FAC643); }
+        .company-name { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; letter-spacing: -0.3px; background: linear-gradient(135deg, #FAC643, #FFD966); -webkit-background-clip: text; background-clip: text; color: transparent; }
     </style>
 </head>
 <body>
@@ -74,13 +97,16 @@
     <!-- Экран входа с чекбоксом согласия -->
     <div id="loginScreen">
         <div class="glass-card" style="margin: 20px 18px;">
-            <div style="display:flex; justify-content:center; margin-bottom:20px;"><i class="fas fa-gavel" style="font-size:48px; color:#FAC643;"></i></div>
-            <h2 style="text-align:center;">Совет Юриста</h2>
+            <div style="display:flex; justify-content:center; margin-bottom:16px;">
+                <img src="https://spoiler038.github.io/sovet-yurista/icons/favicon.svg" alt="Логотип" class="logo-icon" style="width: 64px; height: 64px; filter: drop-shadow(0 0 6px rgba(250,198,67,0.5));" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <i class="fas fa-gavel" style="font-size:52px; color:#FAC643; display:none;"></i>
+            </div>
+            <h2 style="text-align:center;" class="company-name">ООО ЮК "СОВЕТ ЮРИСТА"</h2>
             <div id="newsFeed"></div>
             <div class="map-placeholder">
                 <iframe src="https://yandex.ru/map-widget/v1/?ll=36.192233%2C55.702596&z=16&l=map&pt=36.192233,55.702596,pm2rdm" style="height:200px; width:100%; border:0;" allowfullscreen></iframe>
             </div>
-            <h3 style="margin-top:10px;">Вход в кабинет</h3>
+            <h3 style="margin-top:10px;">Вход в личный кабинет</h3>
             <input type="text" id="loginUsername" placeholder="Логин (user / admin)">
             <input type="password" id="loginPassword" placeholder="Пароль (user / admin)">
             
@@ -118,17 +144,18 @@
     let newsLinks = [];
     let newsArticles = [];
 
-    // Функция загрузки текста документа из папки /docs/
+    // Функция загрузки текста документа из папки /docs/ (с полным путём GitHub Pages)
     async function loadDocumentContent(docName) {
+        const baseUrl = 'https://spoiler038.github.io/sovet-yurista/';
+        const docUrl = `${baseUrl}docs/${docName}.txt`;
         try {
-            const response = await fetch(`/docs/${docName}.txt`);
+            const response = await fetch(docUrl);
             if (!response.ok) throw new Error('Документ не найден');
             const text = await response.text();
             return text;
         } catch (error) {
             console.error('Ошибка загрузки документа:', error);
-            // Возвращаем текст-заглушку для демонстрации
-            return `[Документ "${docName}.txt" не найден в папке /docs/. Пожалуйста, создайте файл с соответствующим содержимым.\n\nПример содержимого для ${docName}:\n\n1. Общие положения\n2. Цели обработки персональных данных\n3. Права субъекта\n4. Заключительные положения\n\nДата публикации: 01.06.2026 г.`;
+            return `[Документ "${docName}.txt" не найден. Пожалуйста, убедитесь, что файл существует в папке /docs/ вашего репозитория.\n\nПуть: ${docUrl}\n\nПример содержимого для ${docName}:\n\n1. Общие положения\n2. Цели обработки персональных данных\n3. Права субъекта\n4. Заключительные положения\n\nДата публикации: 01.06.2026 г.]`;
         }
     }
 
@@ -173,9 +200,10 @@
         ];
         newsLinks = [{ url: "https://www.consultant.ru", name: "Консультант+" }];
         newsArticles = [
-            { title: "Изменения в ГК РФ", summary: "Новые правила цифровых прав и защиты потребителей.", date: "2026-06-01" },
-            { title: "Верховный суд о субсидиарной ответственности", summary: "Ужесточение позиции по контролирующим лицам.", date: "2026-05-28" },
-            { title: "Мораторий на проверки бизнеса", summary: "Продлен до 2027 года, поддержка предпринимателей.", date: "2026-05-25" }
+            { title: "Изменения в ГК РФ", summary: "Новые правила цифровых прав и защиты потребителей. Вступают в силу с 1 сентября 2026 года.", date: "2026-06-01" },
+            { title: "Верховный суд о субсидиарной ответственности", summary: "Ужесточение позиции по контролирующим лицам. Новые разъяснения для арбитражных судов.", date: "2026-05-28" },
+            { title: "Мораторий на проверки бизнеса", summary: "Продлен до 2027 года, поддержка предпринимателей в условиях санкций.", date: "2026-05-25" },
+            { title: "Упрощение регистрации ООО", summary: "Новый порядок подачи документов через портал Госуслуг без нотариуса.", date: "2026-05-20" }
         ];
     }
     function persistData() { localStorage.setItem("legalAppData", JSON.stringify({ allCases, allDocuments, allAppointments, blockedSlots, newsLinks, newsArticles, currentUser })); }
@@ -213,11 +241,11 @@
         setTimeout(() => toast.remove(), 2500);
     }
 
-    // Новости на экране входа + ИИ сводка
+    // Новости на экране входа с анимацией
     function renderNewsOnLogin() {
         const container = document.getElementById('newsFeed');
         if(container) {
-            container.innerHTML = newsArticles.map(art => `<div class="news-item"><div class="flex-between"><strong>${art.title}</strong><span style="font-size:10px;">${art.date}</span></div><p style="font-size:13px;">${art.summary}</p></div>`).join('');
+            container.innerHTML = newsArticles.map(art => `<div class="news-item"><div class="flex-between"><strong>${art.title}</strong><span style="font-size:10px;">${art.date}</span></div><p style="font-size:13px; margin-top:6px;">${art.summary}</p></div>`).join('');
             if(!document.getElementById('aiSummaryBtn')) {
                 const aiBtn = document.createElement('button');
                 aiBtn.className = 'btn-outline';
@@ -225,7 +253,7 @@
                 aiBtn.innerHTML = '<i class="fas fa-robot"></i> Сводка ИИ';
                 aiBtn.style.margin = '12px 0 0 0';
                 aiBtn.style.width = '100%';
-                aiBtn.onclick = () => showModal({ title: "🤖 Аналитика от ИИ", message: "На основе последних новостей: усиление защиты прав потребителей, послабления для МСП, новые разъяснения ВС РФ по корпоративным спорам. Рекомендуем обновить договорную базу.", icon: "fas fa-brain", confirmText: "Понятно" });
+                aiBtn.onclick = () => showModal({ title: "🤖 Аналитика от ИИ", message: "На основе последних новостей: усиление защиты прав потребителей, послабления для МСП, новые разъяснения ВС РФ по корпоративным спорам. Рекомендуем обновить договорную базу и провести аудит кадровых документов.", icon: "fas fa-brain", confirmText: "Понятно" });
                 container.parentNode.insertBefore(aiBtn, container.nextSibling);
             }
         }
@@ -295,7 +323,9 @@
         const month = today.getMonth();
         const daysInMonth = new Date(year, month+1, 0).getDate();
         let calHtml = `<div class="cal-grid">${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div style="font-weight:bold;">${d}</div>`).join('')}`;
-        for(let i=0; i<new Date(year, month, 1).getDay()-1; i++) calHtml += `<div></div>`;
+        const firstDayOfMonth = new Date(year, month, 1);
+        let startOffset = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
+        for(let i=0; i<startOffset; i++) calHtml += `<div></div>`;
         for(let d=1; d<=daysInMonth; d++) { const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; calHtml += `<div class="cal-day" data-date="${dateStr}">${d}</div>`; }
         calHtml += `</div>`;
         document.getElementById('simpleCalendar').innerHTML = calHtml;
@@ -375,7 +405,7 @@
     }
     init();
     // PWA Service Worker
-    if('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(e=>console.log); }
+    if('serviceWorker' in navigator) { navigator.serviceWorker.register('https://spoiler038.github.io/sovet-yurista/sw.js').catch(e=>console.log); }
 </script>
 </body>
 </html>
