@@ -1,6 +1,6 @@
 {
   "name": "ООО ЮК Совет Юриста",
-  "short_name": "СоветЮриста",
+  "short_name": "Совет Юриста",
   "description": "Юридическая защита бизнеса и граждан",
   "start_url": "/sovet-yurista/index.html",
   "display": "standalone",
