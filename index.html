@@ -4,44 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>ООО ЮК "СОВЕТ ЮРИСТА" — Юридическая защита бизнеса и граждан</title>
-    <!-- Favicon (убираем 404) -->
-    <link rel="icon" type="image/svg+xml" href="https://spoiler038.github.io/sovet-yurista/icons/favicon.ico">
-    <link rel="shortcut icon" href="https://spoiler038.github.io/sovet-yurista/icons/favicon.ico">
     <link rel="manifest" href="/sovet-yurista/manifest.json">
     <meta name="theme-color" content="#1C1D21">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://spoiler038.github.io/sovet-yurista/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/x-icon" href="https://spoiler038.github.io/sovet-yurista/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="96x96" href="https://spoiler038.github.io/sovet-yurista/icons/icon-96.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="https://spoiler038.github.io/sovet-yurista/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="https://spoiler038.github.io/sovet-yurista/icons/icon-512.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0B0C10 0%, #1C1D21 100%); color: #fff; min-height: 100vh; overflow-x: hidden; }
         .app-container { max-width: 600px; margin: 0 auto; width: 100%; background: #1C1D21; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow-x: hidden; }
-        .main-content { flex: 1; padding: 20px 18px 80px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        
+        .main-content { flex: 1; padding: 20px 18px 70px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .bg-blur {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('https://xn---50-6cdisw8bvfgie8n.xn--p1ai/wp-content/uploads/2026/05/front-view-blurry-lawyer-working-scaled.jpg');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .app-container > * { position: relative; z-index: 1; }
         .news-container { overflow-x: hidden; position: relative; margin: 16px 0; }
         .news-item {
             border-left: 4px solid #FAC643;
             padding: 14px 16px;
             margin-bottom: 14px;
-            background: #25262B;
+            background: rgba(37, 38, 43, 0.9);
+            backdrop-filter: blur(4px);
             border-radius: 20px;
             opacity: 0;
-            transform: translateX(-140px);
-            animation: slideInNews 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            transform: translateX(-180px);
+            animation: slideInNews 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.1) forwards;
             transition: all 0.3s;
+            cursor: pointer;
         }
         .news-item:hover { transform: translateX(4px); border-left-width: 6px; }
-        .news-item:nth-child(1) { animation-delay: 0.02s; }
-        .news-item:nth-child(2) { animation-delay: 0.12s; }
-        .news-item:nth-child(3) { animation-delay: 0.22s; }
-        .news-item:nth-child(4) { animation-delay: 0.32s; }
+        .news-item:nth-child(1) { animation-delay: 0.05s; }
+        .news-item:nth-child(2) { animation-delay: 0.18s; }
+        .news-item:nth-child(3) { animation-delay: 0.31s; }
+        .news-item:nth-child(4) { animation-delay: 0.44s; }
         @keyframes slideInNews {
-            0% { opacity: 0; transform: translateX(-140px); }
+            0% { opacity: 0; transform: translateX(-180px); }
             100% { opacity: 1; transform: translateX(0); }
         }
-        
         .dashboard-header {
             display: flex;
             justify-content: space-between;
@@ -75,32 +90,39 @@
             color: #FAC643;
         }
         .logout-btn:hover { background: rgba(250, 198, 67, 0.3); }
-        
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; background: rgba(28,29,33,0.96); backdrop-filter: blur(12px); display: flex; justify-content: space-around; padding: 8px 12px 14px; border-top: 1px solid rgba(250,198,67,0.2); z-index: 20; }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #8E8E93; font-size: 11px; cursor: pointer; flex: 1; padding: 6px 0; border-radius: 16px; }
         .nav-item i { font-size: 22px; }
         .nav-item.active { color: #FAC643; background: rgba(250, 198, 67, 0.12); }
-        
         .card, .glass-card { background: rgba(46,47,53,0.85); border-radius: 28px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(8px); border: 1px solid rgba(250,198,67,0.15); }
         h2 { font-family: 'Syne', sans-serif; font-size: 1.5rem; margin-bottom: 12px; color: #FAC643; }
         h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 10px; }
         .btn, button { background: linear-gradient(95deg, #FAC643 0%, #E0AD2E 100%); border: none; padding: 12px 24px; border-radius: 60px; font-weight: 600; color: #111; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
         .btn-outline { background: transparent; border: 1.5px solid #FAC643; color: #FAC643; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        input, select { background: #2E2F35; border: 1px solid #3D3E45; border-radius: 40px; padding: 12px 18px; color: white; width: 100%; margin-bottom: 16px; }
+        input, select, textarea { background: #2E2F35; border: 1px solid #3D3E45; border-radius: 40px; padding: 12px 18px; color: white; width: 100%; margin-bottom: 16px; font-family: 'Poppins', sans-serif; }
         input:focus { border-color: #FAC643; outline: none; }
-        
         .consent-checkbox { display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; padding: 12px 0; }
         .consent-checkbox input { width: 22px; height: 22px; margin: 0; accent-color: #FAC643; flex-shrink: 0; margin-top: 2px; }
         .consent-checkbox label { font-size: 13px; color: #ddd; }
         .consent-link { color: #FAC643; cursor: pointer; border-bottom: 1px dashed #FAC643; }
-        
+        .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; margin: 16px 0; }
+        .cal-day { text-align: center; padding: 10px 0; background: #2E2F35; border-radius: 40px; font-size: 14px; cursor: pointer; transition: 0.1s; }
+        .cal-day.selected { background: #FAC643; color: #111; font-weight: bold; }
+        .time-slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .slot { background: #2E2F35; border-radius: 40px; padding: 10px 18px; margin: 6px; display: inline-block; cursor: pointer; font-weight: 500; }
         .slot.free { background: #3A3B44; }
         .slot.booked { opacity: 0.4; cursor: not-allowed; background: #555; }
-        .case-item { background: #25262B; border-radius: 24px; padding: 18px; margin-bottom: 14px; }
+        .appointment-item { background: #25262B; border-radius: 20px; padding: 12px 16px; margin-bottom: 8px; cursor: pointer; transition: 0.1s; }
+        .appointment-item:active { background: #3A3B44; }
+        .case-item { background: #25262B; border-radius: 24px; padding: 18px; margin-bottom: 14px; cursor: pointer; transition: 0.1s; }
+        .case-item:active { background: #2E2F35; }
         .status-badge { background: #FAC64320; color: #FAC643; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; display: inline-block; }
-        
+        .progress-bar { background: #333; border-radius: 30px; height: 8px; margin: 8px 0; overflow: hidden; flex: 1; margin-right: 10px; }
+        .progress-fill { background: #FAC643; height: 8px; border-radius: 30px; width: 0%; transition: width 0.2s; }
+        .timeline-item { border-left: 2px solid #FAC643; padding-left: 16px; margin-bottom: 16px; position: relative; }
+        .timeline-item::before { content: "●"; position: absolute; left: -8px; top: 0; color: #FAC643; }
+        .doc-link { color: #FAC643; text-decoration: underline; cursor: pointer; }
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s ease; }
         .modal-container { max-width: 90%; width: 340px; background: linear-gradient(145deg, #25262F, #1C1D24); border-radius: 48px; padding: 28px 24px 32px; text-align: center; border: 1px solid rgba(250,198,67,0.3); animation: slideUp 0.25s; max-height: 80vh; overflow-y: auto; }
         .modal-container-large { width: 90%; max-width: 500px; text-align: left; }
@@ -108,23 +130,28 @@
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; justify-content: center; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; margin: 16px 0; }
-        .cal-day { text-align: center; padding: 10px 0; background: #2E2F35; border-radius: 40px; font-size: 14px; cursor: pointer; }
-        .cal-day.selected { background: #FAC643; color: #111; font-weight: bold; }
-        .time-slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-        .file-upload { background: #2E2F35; border-radius: 40px; padding: 12px 16px; margin: 8px 0; }
+        .flex-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .tabs { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #3D3E45; }
+        .tab { padding: 8px 16px; cursor: pointer; color: #aaa; font-weight: 500; border-bottom: 2px solid transparent; }
+        .tab.active { color: #FAC643; border-bottom-color: #FAC643; }
         hr { border-color: #3D3E45; margin: 16px 0; }
         .toast-msg { position: fixed; bottom: 90px; left: 20px; right: 20px; background: #2E2F35E6; backdrop-filter: blur(12px); padding: 12px 20px; border-radius: 60px; text-align: center; z-index: 1100; border-left: 5px solid #FAC643; }
-        .map-placeholder { border-radius: 24px; overflow: hidden; margin: 16px 0; }
         .hidden { display: none !important; }
         .legal-text-content { white-space: pre-wrap; font-size: 12px; background: #1a1a1e; padding: 16px; border-radius: 20px; margin: 12px 0; max-height: 400px; overflow-y: auto; }
         .logo-icon { width: 48px; height: 48px; }
         .company-name { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; background: linear-gradient(135deg, #FAC643, #FFD966); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .map-collapsed { display: none; }
+        .map-toggle { cursor: pointer; color: #FAC643; text-decoration: underline; margin-top: 8px; display: inline-block; }
+        .contacts-info { margin-top: 16px; }
+        .contacts-info p { margin: 8px 0; display: flex; align-items: center; gap: 10px; }
+        .contacts-info a { color: #FAC643; text-decoration: none; }
+        .contacts-info i { width: 24px; }
+        .clickable-address { cursor: pointer; border-bottom: 1px dashed #FAC643; }
     </style>
 </head>
 <body>
+<div class="bg-blur"></div>
 <div class="app-container" id="appRoot">
     <div id="loginScreen">
         <div class="glass-card" style="margin: 20px 18px;">
@@ -134,9 +161,6 @@
             </div>
             <h2 class="company-name" style="text-align:center;">ООО ЮК "СОВЕТ ЮРИСТА"</h2>
             <div class="news-container" id="newsFeed"></div>
-            <div class="map-placeholder">
-                <iframe src="https://yandex.ru/map-widget/v1/?ll=36.192233%2C55.702596&z=16&l=map&pt=36.192233,55.702596,pm2rdm" style="height:200px; width:100%; border:0;" allowfullscreen></iframe>
-            </div>
             <h3>Вход в личный кабинет</h3>
             <input type="text" id="loginUsername" placeholder="Логин (user / admin)">
             <input type="password" id="loginPassword" placeholder="Пароль (user / admin)">
@@ -150,6 +174,19 @@
                 </label>
             </div>
             <button id="doLoginBtn" class="btn" style="width:100%" disabled><i class="fas fa-arrow-right-to-bracket"></i> Войти</button>
+            <div style="margin: 10px 0;">
+                <span class="map-toggle" id="mapToggleBtn"><i class="fas fa-map-marker-alt"></i> Мы на карте</span>
+                <div id="mapContainer" class="map-collapsed">
+                    <div class="map-placeholder" style="margin-top: 12px;">
+                        <iframe src="https://yandex.ru/map-widget/v1/?ll=36.192233%2C55.702596&z=16&l=map&pt=36.192233,55.702596,pm2rdm" style="height:200px; width:100%; border:0; border-radius:24px;" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+            <div class="contacts-info">
+                <p><i class="fas fa-location-dot"></i> <span id="addressCopy" class="clickable-address">г. Руза, улица Солнцева, дом 9</span></p>
+                <p><i class="fas fa-phone"></i> <a href="tel:+79253231572">+7 (925) 323-15-72</a></p>
+                <p><i class="fas fa-envelope"></i> <a href="mailto:ooo.sovet.urista@gmail.com">ooo.sovet.urista@gmail.com</a></p>
+            </div>
             <p style="font-size:12px; margin-top:14px; text-align:center;">demo: user/user (клиент) | admin/admin</p>
         </div>
     </div>
@@ -172,9 +209,12 @@
     let allCases = [];
     let allDocuments = [];
     let allAppointments = [];
-    let blockedSlots = [];
-    let newsLinks = [];
+    let blockedSlots = [];      // { date, timeStart, timeEnd }
     let newsArticles = [];
+    let newsLinks = [];
+    let workHours = { start: "10:00", end: "18:00" };
+    let currentCaseDetail = null;
+    let planningMode = false;    // для админа в календаре
 
     async function loadDocumentContent(docName) {
         const baseUrl = 'https://spoiler038.github.io/sovet-yurista/';
@@ -183,10 +223,9 @@
             if (!res.ok) throw new Error();
             return await res.text();
         } catch(e) {
-            return '[Документ "' + docName + '.txt" не найден в папке /docs/]';
+            return '[Документ "' + docName + '.txt" не найден]';
         }
     }
-
     function showDocumentModal(title, content) {
         var overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -198,46 +237,32 @@
 
     function initMockData() {
         allCases = [
-            { id: 1, userId: "user", title: "Спор с поставщиком", status: "В процессе", stage: "Подготовка иска", progress: 65, result: null },
-            { id: 2, userId: "user", title: "Защита прав потребителя", status: "Завершено", stage: "Исполнено", progress: 100, result: "Возврат денег + компенсация" },
-            { id: 3, userId: "user", title: "Корпоративный договор", status: "Завершено", stage: "Мировое", progress: 100, result: "Урегулировано" },
-            { id: 4, userId: "admin", title: "Дело ООО Ромашка", status: "В процессе", stage: "Суд", progress: 40, result: null }
+            { id: 1, userId: "user", title: "Спор с поставщиком", status: "В процессе", stage: "Подготовка иска", progress: 65, result: null, history: [
+                { date: "2026-05-10", status: "Новое дело", stage: "Регистрация", docs: [] },
+                { date: "2026-05-15", status: "В процессе", stage: "Подготовка иска", docs: ["Исковое заявление.pdf"] }
+            ], claimant: "ООО Ромашка", defendant: "ООО Поставщик", category: "Арбитраж" },
+            { id: 2, userId: "user", title: "Защита прав потребителя", status: "Завершено", stage: "Исполнено", progress: 100, result: "Возврат денег + компенсация", history: [
+                { date: "2026-04-01", status: "Завершено", stage: "Исполнено", docs: ["Решение суда.pdf"] }
+            ], claimant: "Иван Петров", defendant: "ООО Магазин", category: "Потребительские" },
+            { id: 3, userId: "admin", title: "Дело ООО Ромашка", status: "В процессе", stage: "Суд", progress: 40, result: null, history: [], claimant: "ООО Ромашка", defendant: "ИП Сидоров", category: "Арбитраж" }
         ];
         allDocuments = [
             { id: 101, userId: "user", caseId: 1, fileName: "Исковое заявление.pdf", uploadDate: "2026-05-20", status: "new", adminSeen: false },
             { id: 102, userId: "user", caseId: 2, fileName: "Решение суда.pdf", uploadDate: "2026-04-10", status: "seen", adminSeen: true }
         ];
-        allAppointments = [{ id: 201, userId: "user", date: "2026-06-15", time: "14:00", clientName: "Иван П.", status: "pending" }];
-        blockedSlots = [{ date: "2026-06-12", time: "10:00" }, { date: "2026-06-12", time: "11:00" }];
-        newsLinks = [{ url: "https://www.consultant.ru", name: "Консультант+" }];
-        newsArticles = [
-            { title: "Изменения в ГК РФ", summary: "Новые правила цифровых прав и защиты потребителей.", date: "2026-06-01" },
-            { title: "ВС РФ о субсидиарной ответственности", summary: "Ужесточение позиции по контролирующим лицам.", date: "2026-05-28" },
-            { title: "Мораторий на проверки бизнеса", summary: "Продлен до 2027 года.", date: "2026-05-25" },
-            { title: "Упрощение регистрации ООО", summary: "Новый порядок через Госуслуги.", date: "2026-05-20" }
+        allAppointments = [
+            { id: 201, userId: "user", date: "2026-06-15", time: "14:00", clientName: "Иван П.", topic: "Консультация по договору", phone: "+79251234567", status: "confirmed" }
         ];
+        blockedSlots = [];
+        newsArticles = [
+            { title: "Изменения в ГК РФ", summary: "Новые правила цифровых прав.", date: "2026-06-01", url: "https://www.consultant.ru/document/cons_doc_LAW_12345/" },
+            { title: "ВС РФ о субсидиарной ответственности", summary: "Ужесточение позиции.", date: "2026-05-28", url: "https://www.vsrf.ru/press_center/news/12345/" }
+        ];
+        newsLinks = [{ url: "https://www.consultant.ru", name: "Консультант+" }];
+        for(let a of newsArticles) a.dateShort = a.date.slice(5).replace('-', '.') + '.' + a.date.slice(2,4);
     }
-    
-    function persistData() { 
-        var data = { allCases: allCases, allDocuments: allDocuments, allAppointments: allAppointments, blockedSlots: blockedSlots, newsLinks: newsLinks, newsArticles: newsArticles, currentUser: currentUser };
-        localStorage.setItem("legalAppData", JSON.stringify(data)); 
-    }
-    
-    function loadPersistedData() { 
-        var raw = localStorage.getItem("legalAppData"); 
-        if(raw) { 
-            try { 
-                var d = JSON.parse(raw); 
-                allCases = d.allCases || allCases; 
-                allDocuments = d.allDocuments || allDocuments; 
-                allAppointments = d.allAppointments || allAppointments; 
-                blockedSlots = d.blockedSlots || blockedSlots; 
-                newsLinks = d.newsLinks || newsLinks; 
-                newsArticles = d.newsArticles || newsArticles; 
-                if(d.currentUser) currentUser = d.currentUser; 
-            } catch(e) {} 
-        } 
-    }
+    function persistData() { localStorage.setItem("legalAppData", JSON.stringify({ allCases, allDocuments, allAppointments, blockedSlots, newsArticles, newsLinks, currentUser, workHours })); }
+    function loadPersistedData() { var raw = localStorage.getItem("legalAppData"); if(raw) { try { var d = JSON.parse(raw); allCases = d.allCases || allCases; allDocuments = d.allDocuments || allDocuments; allAppointments = d.allAppointments || allAppointments; blockedSlots = d.blockedSlots || blockedSlots; newsArticles = d.newsArticles || newsArticles; newsLinks = d.newsLinks || newsLinks; if(d.currentUser) currentUser = d.currentUser; if(d.workHours) workHours = d.workHours; } catch(e) {} } }
 
     function showModal(options) {
         var overlay = document.createElement('div');
@@ -252,153 +277,287 @@
         if(cancelBtn) cancelBtn.onclick = function() { if(options.onCancel) options.onCancel(); close(); };
         overlay.onclick = function(e) { if(e.target === overlay) close(); };
     }
-    
     function showToast(msg, isErr) {
         var toast = document.createElement('div');
         toast.className = 'toast-msg';
-        var iconClass = isErr ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle';
-        toast.innerHTML = '<i class="' + iconClass + '"></i> ' + msg;
+        toast.innerHTML = '<i class="' + (isErr ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle') + '"></i> ' + msg;
         document.body.appendChild(toast);
         setTimeout(function() { toast.remove(); }, 2500);
     }
-
     function logout() {
-        showModal({
-            title: "Выход",
-            message: "Вы действительно хотите выйти?",
-            confirmText: "Да, выйти",
-            showCancel: true,
-            onConfirm: function() {
-                currentUser = null;
-                persistData();
-                document.getElementById('appDashboard').classList.add('hidden');
-                document.getElementById('loginScreen').classList.remove('hidden');
-                document.getElementById('consentCheckbox').checked = false;
-                document.getElementById('doLoginBtn').disabled = true;
-                showToast("Вы вышли из системы", false);
-            }
-        });
+        showModal({ title: "Выход", message: "Вы действительно хотите выйти?", confirmText: "Да, выйти", showCancel: true, onConfirm: function() {
+            currentUser = null; persistData(); document.getElementById('appDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('consentCheckbox').checked = false; document.getElementById('doLoginBtn').disabled = true; showToast("Вы вышли из системы");
+        } });
     }
-
     function renderNewsOnLogin() {
         var container = document.getElementById('newsFeed');
         if(container) {
             var html = '';
             for(var i = 0; i < newsArticles.length; i++) {
-                html += '<div class="news-item"><div class="flex-between"><strong>' + newsArticles[i].title + '</strong><span style="font-size:10px;">' + newsArticles[i].date + '</span></div><p style="font-size:13px;">' + newsArticles[i].summary + '</p></div>';
+                html += '<div class="news-item" data-url="' + (newsArticles[i].url || '') + '"><div class="flex-between"><strong>' + newsArticles[i].title + '</strong><span style="font-size:10px;">' + newsArticles[i].dateShort + '</span></div><p style="font-size:13px;">' + newsArticles[i].summary + '</p></div>';
             }
             container.innerHTML = html;
+            document.querySelectorAll('.news-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    var url = this.dataset.url;
+                    if(url) window.open(url, '_blank');
+                    else showModal({ title: "Источник", message: "Ссылка на новость не указана", icon: "fas fa-link", confirmText: "OK" });
+                });
+            });
             if(!document.getElementById('aiSummaryBtn')) {
                 var btn = document.createElement('button');
-                btn.className = 'btn-outline';
-                btn.id = 'aiSummaryBtn';
-                btn.innerHTML = '<i class="fas fa-robot"></i> Сводка ИИ';
-                btn.style.margin = '12px 0 0 0';
-                btn.style.width = '100%';
-                btn.onclick = function() {
-                    showModal({ title: "Аналитика от ИИ", message: "Усиление защиты прав потребителей, послабления для МСП, новые разъяснения ВС РФ.", icon: "fas fa-brain", confirmText: "Понятно" });
-                };
+                btn.className = 'btn-outline'; btn.id = 'aiSummaryBtn'; btn.innerHTML = '<i class="fas fa-robot"></i> Сводка ИИ'; btn.style.margin = '12px 0 0 0'; btn.style.width = '100%';
+                btn.onclick = function() { showModal({ title: "Аналитика от ИИ", message: "Усиление защиты прав потребителей, послабления для МСП, новые разъяснения ВС РФ.", icon: "fas fa-brain", confirmText: "Понятно" }); };
                 container.parentNode.insertBefore(btn, container.nextSibling);
             }
         }
     }
 
-    function setupConsent() {
-        var chk = document.getElementById('consentCheckbox');
-        var btn = document.getElementById('doLoginBtn');
-        var links = document.querySelectorAll('.consent-link');
-        for(var i = 0; i < links.length; i++) {
-            links[i].addEventListener('click', async function(e) {
-                e.preventDefault();
-                var docName = this.dataset.doc;
-                var title = '';
-                if(docName === 'personal-data-consent') title = 'Согласие на обработку ПД';
-                else if(docName === 'privacy-policy') title = 'Политика конфиденциальности';
-                else if(docName === 'user-agreement') title = 'Пользовательское соглашение';
-                else title = 'Документ';
-                var content = await loadDocumentContent(docName);
-                showDocumentModal(title, content);
-            });
-        }
-        chk.onchange = function() { btn.disabled = !chk.checked; };
-    }
+    let activeTab = "cases";
+    let casesSubTab = "current";
+    let selectedArchiveCase = null;
 
-    var activeTab = "cases";
-    
     function renderDashboard() {
         if(!currentUser) return;
         document.getElementById('userAvatar').textContent = currentUser.login.charAt(0).toUpperCase();
         document.getElementById('userName').textContent = currentUser.login === 'admin' ? 'Администратор' : currentUser.login;
         document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Администратор' : 'Клиент';
-        
         var container = document.getElementById('mainContent');
         var isAdmin = (currentUser.role === 'admin');
         var html = '';
-        
         if(activeTab === 'cases') {
-            var userCases = allCases.filter(function(c) { return c.userId === currentUser.login; });
-            var currentCase = null;
-            var pastCases = [];
-            for(var i = 0; i < userCases.length; i++) {
-                if(userCases[i].status === "В процессе") currentCase = userCases[i];
-                else pastCases.push(userCases[i]);
-            }
-            html = '<h2><i class="fas fa-briefcase"></i> Мои дела</h2>';
-            if(currentCase) {
-                html += '<div class="case-item"><div class="flex-between"><h3>' + currentCase.title + '</h3><span class="status-badge">' + currentCase.status + '</span></div><p>' + currentCase.stage + '</p><div style="background:#333; border-radius:30px; height:8px; margin:12px 0;"><div style="width:' + currentCase.progress + '%; background:#FAC643; height:8px; border-radius:30px;"></div></div><p>Прогресс: ' + currentCase.progress + '%</p></div>';
+            if(isAdmin) {
+                html = '<div class="tabs"><div class="tab ' + (casesSubTab === 'current' ? 'active' : '') + '" data-subtab="current">Текущие дела</div><div class="tab ' + (casesSubTab === 'archive' ? 'active' : '') + '" data-subtab="archive">Архив</div></div>';
+                if(selectedArchiveCase && casesSubTab === 'archive') {
+                    var c = selectedArchiveCase;
+                    html += '<div><button id="backToArchiveBtn" class="btn-outline" style="margin-bottom:16px;"><i class="fas fa-arrow-left"></i> Назад к списку</button>';
+                    html += '<div class="case-item"><h3>' + c.title + '</h3><p>Заявитель: ' + (c.claimant || '—') + ' | Ответчик: ' + (c.defendant || '—') + ' | Категория: ' + (c.category || '—') + '</p><p>Результат: ' + (c.result || 'Завершено') + '</p><button id="restoreCaseBtn" class="btn-outline" style="margin-top:8px;">Вернуть в работу</button>';
+                    if(c.history && c.history.length) {
+                        html += '<h4>Хронология дела</h4>';
+                        for(var h of c.history) {
+                            html += '<div class="timeline-item"><strong>' + h.date + '</strong> — ' + h.status + ' (' + h.stage + ')<br>';
+                            if(h.docs && h.docs.length) {
+                                html += 'Документы: ' + h.docs.map(d => '<span class="doc-link" data-doc="' + d + '">' + d + '</span>').join(', ');
+                            }
+                            html += '</div>';
+                        }
+                    }
+                    html += '</div>';
+                } else {
+                    var userCases = allCases.filter(c => isAdmin ? true : c.userId === currentUser.login);
+                    if(casesSubTab === 'current') userCases = userCases.filter(c => c.status !== "Завершено");
+                    else userCases = userCases.filter(c => c.status === "Завершено");
+                    if(casesSubTab === 'current') html += '<button id="addCaseBtn" class="btn" style="margin-bottom:16px;"><i class="fas fa-plus"></i> Добавить дело</button>';
+                    for(var c of userCases) {
+                        html += '<div class="case-item" data-case-id="' + c.id + '">';
+                        html += '<div class="flex-between"><h3>' + c.title + '</h3><span class="status-badge">' + c.status + '</span></div>';
+                        if(c.status !== "Завершено") {
+                            html += '<p>' + c.stage + '</p><div class="flex-row"><div class="progress-bar"><div class="progress-fill" style="width:' + c.progress + '%;"></div></div>';
+                            if(isAdmin) {
+                                html += '<select class="status-select" data-id="' + c.id + '" style="width:auto; margin:0;">' +
+                                    '<option>В процессе</option><option>Приостановлено</option><option>На рассмотрении</option><option>Завершено</option></select>' +
+                                    '<input type="number" class="progress-input" data-id="' + c.id + '" value="' + c.progress + '" style="width:60px; margin:0;" min="0" max="100">% ' +
+                                    '<button class="btn-outline update-case-btn" data-id="' + c.id + '"><i class="fas fa-sync-alt"></i></button></div>';
+                            } else {
+                                html += '</div><p>Прогресс: ' + c.progress + '%</p>';
+                            }
+                        } else {
+                            html += '<p>Результат: ' + (c.result || 'Завершено') + '</p>';
+                            if(isAdmin && casesSubTab === 'archive') {
+                                html += '<button class="btn-outline view-detail-btn" data-id="' + c.id + '" style="margin-top:8px;">Подробнее</button>';
+                            }
+                        }
+                        html += '</div>';
+                    }
+                    if(userCases.length === 0) html += '<div class="card">Нет дел в этом разделе</div>';
+                }
             } else {
-                html += '<div class="card">✨ Активных дел нет</div>';
-            }
-            if(pastCases.length > 0) {
-                html += '<h2 style="margin-top:24px;">✅ Завершённые дела</h2>';
-                for(var j = 0; j < pastCases.length; j++) {
-                    html += '<div class="case-item"><strong>' + pastCases[j].title + '</strong><p>Результат: ' + (pastCases[j].result || 'Завершено') + '</p></div>';
+                var userCases = allCases.filter(c => c.userId === currentUser.login);
+                var currentCase = userCases.find(c => c.status !== "Завершено");
+                var pastCases = userCases.filter(c => c.status === "Завершено");
+                html = '<h2>Мои дела</h2>';
+                if(currentCase) {
+                    html += '<div class="case-item"><div class="flex-between"><h3>' + currentCase.title + '</h3><span class="status-badge">' + currentCase.status + '</span></div><p>' + currentCase.stage + '</p><div class="progress-bar"><div class="progress-fill" style="width:' + currentCase.progress + '%;"></div></div><p>Прогресс: ' + currentCase.progress + '%</p>';
+                    if(currentCase.history && currentCase.history.length) {
+                        html += '<h4>Хронология</h4>';
+                        for(var h of currentCase.history) {
+                            html += '<div class="timeline-item"><strong>' + h.date + '</strong> — ' + h.status + '<br>';
+                            if(h.docs && h.docs.length) html += 'Документы: ' + h.docs.map(d => '<span class="doc-link" data-doc="' + d + '">' + d + '</span>').join(', ');
+                            html += '</div>';
+                        }
+                    }
+                    html += '</div>';
+                } else html += '<div class="card">Нет текущих дел</div>';
+                if(pastCases.length) {
+                    html += '<h2>Завершённые</h2>';
+                    for(var p of pastCases) html += '<div class="case-item"><strong>' + p.title + '</strong><p>Результат: ' + p.result + '</p></div>';
                 }
             }
         }
         else if(activeTab === 'calendar') {
-            html = '<h2><i class="fas fa-calendar-alt"></i> Запись на приём</h2><div class="card"><div id="simpleCalendar"></div><div id="timeSlotsArea"></div><button id="bookSlotBtn" class="btn" style="margin-top:20px; width:100%;"><i class="fas fa-check"></i> Записаться</button></div><h3>Мои записи</h3><div id="myAppointmentsList"></div>';
+            html = '<h2><i class="fas fa-calendar-alt"></i> ' + (isAdmin ? 'Управление записью' : 'Запись на приём') + '</h2>';
+            html += '<div class="card"><div id="simpleCalendar"></div><div id="timeSlotsArea"></div>';
+            if(isAdmin) html += '<button id="planningToggleBtn" class="btn" style="margin-top:16px;"><i class="fas fa-calendar-plus"></i> Планирование</button>';
+            else html += '<button id="bookSlotBtn" class="btn" style="margin-top:20px; width:100%;"><i class="fas fa-check"></i> Записаться</button>';
+            html += '</div><h3>Мои записи</h3><div id="myAppointmentsList"></div>';
         }
         else if(activeTab === 'documents') {
-            var caseOptions = '';
-            var userCases2 = allCases.filter(function(c) { return c.userId === currentUser.login; });
-            for(var k = 0; k < userCases2.length; k++) {
-                caseOptions += '<option value="' + userCases2[k].id + '">' + userCases2[k].title + '</option>';
+            if(isAdmin) {
+                html = '<div class="tabs"><div class="tab ' + (casesSubTab === 'new' ? 'active' : '') + '" data-subtab="new">Новые документы</div><div class="tab ' + (casesSubTab === 'upload' ? 'active' : '') + '" data-subtab="upload">Загрузить</div></div>';
+                if(casesSubTab === 'new') {
+                    var newDocs = allDocuments.filter(d => d.status === 'new' && !d.adminSeen);
+                    html += '<div id="newDocsList">';
+                    for(var d of newDocs) {
+                        html += '<div class="file-upload flex-between"><span><i class="fas fa-file-pdf"></i> ' + d.fileName + ' (клиент: ' + d.userId + ')</span><button class="btn-outline view-doc-btn" data-id="' + d.id + '">Просмотреть</button><button class="btn-outline attach-doc-btn" data-id="' + d.id + '">Прикрепить к делу</button></div>';
+                    }
+                    html += '</div>';
+                } else {
+                    var caseOptions = '';
+                    for(var c of allCases) caseOptions += '<option value="' + c.id + '">' + c.title + '</option>';
+                    html += '<div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">' + caseOptions + '</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn">Загрузить</button></div><h3>Все документы</h3><div id="userDocsList"></div>';
+                }
+            } else {
+                var caseOptions = '';
+                for(var c of allCases.filter(c => c.userId === currentUser.login)) caseOptions += '<option value="' + c.id + '">' + c.title + '</option>';
+                html = '<h2>Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">' + caseOptions + '</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn">Загрузить</button></div><h3>Мои документы</h3><div id="userDocsList"></div>';
             }
-            html = '<h2><i class="fas fa-file-alt"></i> Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">' + caseOptions + '</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn" style="width:100%;"><i class="fas fa-cloud-upload-alt"></i> Загрузить</button></div><h3>Загруженные документы</h3><div id="userDocsList"></div>';
         }
         else if(activeTab === 'admin' && isAdmin) {
-            var newDocs = allDocuments.filter(function(d) { return d.status === 'new' && !d.adminSeen; });
-            var newApps = allAppointments.filter(function(a) { return a.status === 'pending'; });
-            var docsListHtml = '';
-            for(var m = 0; m < newDocs.length; m++) {
-                docsListHtml += '<div class="flex-between"><span>📄 ' + newDocs[m].fileName + ' (' + newDocs[m].userId + ')</span><button class="btn-outline small-mark" data-id="' + newDocs[m].id + '">Просмотрено</button></div>';
-            }
-            var appsListHtml = '';
-            for(var n = 0; n < newApps.length; n++) {
-                appsListHtml += '<div class="flex-between"><span>📅 ' + newApps[n].date + ' ' + newApps[n].time + ' — ' + newApps[n].clientName + '</span><button class="btn-outline small-confirm" data-id="' + newApps[n].id + '">Подтвердить</button></div>';
-            }
-            html = '<h2><i class="fas fa-user-shield"></i> Админ-панель</h2><div class="card">' +
-                '<div class="flex-between"><h3>Новые документы</h3><span class="status-badge">' + newDocs.length + '</span></div>' +
-                '<div id="adminDocsList">' + (docsListHtml || 'Нет') + '</div>' +
-                '<hr><h3>Новые записи</h3>' +
-                '<div id="adminAppsList">' + (appsListHtml || 'Нет') + '</div>' +
-                '<hr><h3>Блокировка слотов</h3>' +
-                '<div style="display:flex; gap:8px;"><input type="date" id="blockDate" style="flex:1;"><select id="blockTime" style="flex:1;"><option>10:00</option><option>12:00</option><option>14:00</option><option>16:00</option><option>18:00</option></select><button id="addBlockSlotBtn" class="btn">+</button></div>' +
-                '<p><small>Заблокировано: ' + blockedSlots.map(function(b) { return b.date + ' ' + b.time; }).join(', ') + '</small></p>' +
-                '<hr><h3>Управление ссылками</h3><div id="linksList"></div>' +
-                '<div style="display:flex; gap:8px;"><input id="newLinkName" placeholder="Название"><input id="newLinkUrl" placeholder="URL"><button id="addLinkBtn" class="btn-outline">Добавить</button></div>' +
-                '</div>';
+            html = '<h2><i class="fas fa-cog"></i> Настройки</h2><div class="card"><h3>Часы работы</h3><div class="flex-between"><input type="time" id="workStart" value="' + workHours.start + '"><span> — </span><input type="time" id="workEnd" value="' + workHours.end + '"><button id="saveWorkHoursBtn" class="btn-outline">Сохранить</button></div></div>';
+            html += '<div class="card"><h3>Управление ссылками на новости</h3><div id="linksList"></div><div style="display:flex; gap:8px;"><input id="newLinkName" placeholder="Название"><input id="newLinkUrl" placeholder="URL"><button id="addLinkBtn" class="btn-outline">Добавить</button></div></div>';
         }
-        else if(activeTab === 'admin' && !isAdmin) {
-            html = '<div class="card"><i class="fas fa-ban"></i> Доступ только администраторам</div>';
-        }
-        
         container.innerHTML = html;
-        if(activeTab === 'calendar') { renderCalendarUI(); }
-        if(activeTab === 'documents') renderUserDocs();
-        if(activeTab === 'admin' && isAdmin) { renderAdminLinks(); attachAdminEvents(); }
+        if(activeTab === 'calendar') renderCalendarUI();
+        if(activeTab === 'documents') { if(!isAdmin || casesSubTab === 'upload') renderUserDocs(); }
         attachDynamicEvents();
+        if(isAdmin && activeTab === 'cases') attachCaseEvents();
+        if(isAdmin && activeTab === 'documents') attachDocAdminEvents();
+        if(activeTab === 'admin' && isAdmin) renderAdminLinks();
+        // Обновляем активный класс нижней панели
+        document.querySelectorAll('.nav-item').forEach(nav => {
+            if(nav.dataset.tab === activeTab) nav.classList.add('active');
+            else nav.classList.remove('active');
+        });
+    }
+
+    function attachCaseEvents() {
+        document.querySelectorAll('.update-case-btn').forEach(btn => {
+            btn.onclick = function() {
+                var id = parseInt(this.dataset.id);
+                var caseObj = allCases.find(c => c.id === id);
+                if(caseObj) {
+                    var newStatus = this.parentElement.querySelector('.status-select').value;
+                    var newProgress = parseInt(this.parentElement.querySelector('.progress-input').value);
+                    caseObj.status = newStatus;
+                    caseObj.progress = newProgress;
+                    if(newStatus === "Завершено") caseObj.result = "Завершено администратором";
+                    if(!caseObj.history) caseObj.history = [];
+                    caseObj.history.push({ date: new Date().toISOString().slice(0,10), status: newStatus, stage: caseObj.stage, docs: [] });
+                    persistData();
+                    renderDashboard();
+                    showToast("Дело обновлено");
+                }
+            };
+        });
+        document.querySelectorAll('.view-detail-btn').forEach(btn => {
+            btn.onclick = function() {
+                var id = parseInt(this.dataset.id);
+                selectedArchiveCase = allCases.find(c => c.id === id);
+                renderDashboard();
+            };
+        });
+        document.getElementById('backToArchiveBtn')?.addEventListener('click', () => { selectedArchiveCase = null; renderDashboard(); });
+        document.getElementById('restoreCaseBtn')?.addEventListener('click', () => {
+            if(selectedArchiveCase) {
+                selectedArchiveCase.status = "В процессе";
+                selectedArchiveCase.progress = 0;
+                selectedArchiveCase.result = null;
+                persistData();
+                selectedArchiveCase = null;
+                renderDashboard();
+                showToast("Дело возвращено в работу");
+            }
+        });
+        document.getElementById('addCaseBtn')?.addEventListener('click', () => {
+            var overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = '<div class="modal-container"><h3>Новое дело</h3><input id="newCaseTitle" placeholder="Название дела"><input id="newClaimant" placeholder="Заявитель"><input id="newDefendant" placeholder="Ответчик"><select id="newCategory"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select><div class="modal-buttons"><button id="createCaseBtn" class="btn">Создать</button><button id="cancelCaseBtn" class="btn-outline">Отмена</button></div></div>';
+            document.body.appendChild(overlay);
+            document.getElementById('createCaseBtn').onclick = function() {
+                var newId = Date.now();
+                allCases.push({ id: newId, userId: "admin", title: document.getElementById('newCaseTitle').value, status: "В процессе", stage: "Новое", progress: 0, result: null, history: [], claimant: document.getElementById('newClaimant').value, defendant: document.getElementById('newDefendant').value, category: document.getElementById('newCategory').value });
+                persistData();
+                overlay.remove();
+                renderDashboard();
+                showToast("Дело добавлено");
+            };
+            document.getElementById('cancelCaseBtn').onclick = function() { overlay.remove(); };
+        });
+    }
+
+    function attachDocAdminEvents() {
+        document.querySelectorAll('.view-doc-btn').forEach(btn => {
+            btn.onclick = function() {
+                var docId = parseInt(this.dataset.id);
+                var doc = allDocuments.find(d => d.id === docId);
+                if(doc) showModal({ title: "Документ", message: "Имя файла: " + doc.fileName + "\nДата: " + doc.uploadDate, icon: "fas fa-file", confirmText: "OK" });
+            };
+        });
+        document.querySelectorAll('.attach-doc-btn').forEach(btn => {
+            btn.onclick = function() {
+                var docId = parseInt(this.dataset.id);
+                var doc = allDocuments.find(d => d.id === docId);
+                if(doc) {
+                    doc.status = 'seen';
+                    doc.adminSeen = true;
+                    persistData();
+                    showToast("Документ прикреплён к делу");
+                    renderDashboard();
+                }
+            };
+        });
+    }
+
+    function renderUserDocs() {
+        var container = document.getElementById('userDocsList');
+        if(container) {
+            var docs = allDocuments.filter(d => d.userId === currentUser.login || (currentUser.role === 'admin'));
+            var html = '';
+            for(var d of docs) html += '<div class="file-upload"><i class="fas fa-file"></i> ' + d.fileName + ' (' + d.uploadDate + ')</div>';
+            container.innerHTML = html || '<p>Нет документов</p>';
+        }
+    }
+
+    function renderAdminLinks() {
+        var div = document.getElementById('linksList');
+        if(div) {
+            var html = '';
+            for(var i=0; i<newsLinks.length; i++) html += '<div class="flex-between"><span>🔗 ' + newsLinks[i].name + '</span><button class="btn-outline del-link" data-idx="' + i + '">Удалить</button></div>';
+            div.innerHTML = html;
+            document.querySelectorAll('.del-link').forEach(btn => btn.onclick = function() { var idx = parseInt(this.dataset.idx); newsLinks.splice(idx,1); persistData(); renderAdminLinks(); showToast("Ссылка удалена"); });
+        }
+        document.getElementById('saveWorkHoursBtn')?.addEventListener('click', function() {
+            workHours.start = document.getElementById('workStart').value;
+            workHours.end = document.getElementById('workEnd').value;
+            persistData();
+            showToast("Часы работы сохранены");
+            if(activeTab === 'calendar') renderCalendarUI();
+        });
+        document.getElementById('addLinkBtn')?.addEventListener('click', function() {
+            var name = document.getElementById('newLinkName').value;
+            var url = document.getElementById('newLinkUrl').value;
+            if(name && url) { newsLinks.push({name, url}); persistData(); renderAdminLinks(); showToast("Ссылка добавлена"); }
+            else showToast("Заполните оба поля", true);
+        });
+    }
+
+    function generateTimeSlots(start, end) {
+        var slots = [];
+        var s = parseInt(start.split(':')[0]);
+        var e = parseInt(end.split(':')[0]);
+        for(var h=s; h<e; h++) slots.push(h+':00');
+        return slots;
     }
 
     function renderCalendarUI() {
@@ -406,347 +565,259 @@
         var year = today.getFullYear();
         var month = today.getMonth();
         var daysInMonth = new Date(year, month+1, 0).getDate();
-        var calHtml = '<div class="cal-grid">';
-        var weekdays = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-        for(var i = 0; i < weekdays.length; i++) {
-            calHtml += '<div style="font-weight:bold;">' + weekdays[i] + '</div>';
-        }
+        var calHtml = '<div class="cal-grid">' + ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>'<div style="font-weight:bold;">'+d+'</div>').join('');
         var firstDay = new Date(year, month, 1);
         var startOffset = firstDay.getDay() - 1;
         if(startOffset < 0) startOffset = 6;
-        for(var s = 0; s < startOffset; s++) calHtml += '<div></div>';
-        for(var d = 1; d <= daysInMonth; d++) {
+        for(var s=0; s<startOffset; s++) calHtml += '<div></div>';
+        for(var d=1; d<=daysInMonth; d++) {
             var ds = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
             calHtml += '<div class="cal-day" data-date="' + ds + '">' + d + '</div>';
         }
         calHtml += '</div>';
         document.getElementById('simpleCalendar').innerHTML = calHtml;
-        
         var selectedDate = null;
-        var dayElements = document.querySelectorAll('.cal-day');
-        for(var di = 0; di < dayElements.length; di++) {
-            dayElements[di].onclick = function() {
-                var allDays = document.querySelectorAll('.cal-day');
-                for(var ad = 0; ad < allDays.length; ad++) allDays[ad].classList.remove('selected');
+        document.querySelectorAll('.cal-day').forEach(el => {
+            el.onclick = function() {
+                document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
                 this.classList.add('selected');
                 selectedDate = this.dataset.date;
-                renderTimeSlots(selectedDate);
+                if(currentUser.role === 'admin') {
+                    if(planningMode) showPlanningPanel(selectedDate);
+                    else showAppointmentsForDate(selectedDate);
+                } else {
+                    renderTimeSlots(selectedDate);
+                }
             };
+        });
+        function showAppointmentsForDate(date) {
+            var apps = allAppointments.filter(a => a.date === date);
+            var listDiv = document.getElementById('timeSlotsArea');
+            var appsHtml = '<div><h4>Записи на ' + date + '</h4>';
+            for(var a of apps) {
+                appsHtml += '<div class="appointment-item" data-id="' + a.id + '"><strong>' + a.time + '</strong> — ' + a.clientName + '<br><small>' + (a.topic || 'Нет темы') + '</small></div>';
+            }
+            appsHtml += '</div>';
+            if(apps.length) listDiv.innerHTML = appsHtml;
+            else listDiv.innerHTML = '<p>Нет записей</p>';
+            document.querySelectorAll('.appointment-item').forEach(item => {
+                item.onclick = function() {
+                    var app = allAppointments.find(a => a.id == this.dataset.id);
+                    if(app) showModal({ title: "Данные клиента", message: "Имя: " + app.clientName + "\nТелефон: " + (app.phone || "не указан") + "\nТема: " + (app.topic || "—"), icon: "fas fa-user", confirmText: "Позвонить", showCancel: true, onConfirm: () => { if(app.phone) window.location.href = "tel:" + app.phone; } });
+                };
+            });
         }
-        
-        window.renderTimeSlots = function(date) {
-            var slots = ['10:00', '12:00', '14:00', '16:00', '18:00'];
+        function renderTimeSlots(date) {
+            var slots = generateTimeSlots(workHours.start, workHours.end);
             var timesDiv = document.getElementById('timeSlotsArea');
             var slotsHtml = '<div class="time-slots">';
-            for(var si = 0; si < slots.length; si++) {
-                var blocked = false;
-                for(var bi = 0; bi < blockedSlots.length; bi++) {
-                    if(blockedSlots[bi].date === date && blockedSlots[bi].time === slots[si]) blocked = true;
-                }
-                var booked = false;
-                for(var api = 0; api < allAppointments.length; api++) {
-                    if(allAppointments[api].date === date && allAppointments[api].time === slots[si] && allAppointments[api].userId === currentUser.login) booked = true;
-                }
+            for(var i=0; i<slots.length; i++) {
+                var t = slots[i];
+                var blocked = blockedSlots.some(b => b.date === date && b.timeStart <= t && b.timeEnd >= t);
+                var booked = allAppointments.some(a => a.date === date && a.time === t);
                 var disabled = blocked || booked;
-                var cls = disabled ? 'booked' : 'free';
-                var symbol = disabled ? '🔒' : '✅';
-                slotsHtml += '<div class="slot ' + cls + '" data-time="' + slots[si] + '" data-date="' + date + '">' + slots[si] + ' ' + symbol + '</div>';
+                slotsHtml += '<div class="slot ' + (disabled ? 'booked' : 'free') + '" data-time="' + t + '">' + t + (disabled ? ' ❌' : ' ✅') + '</div>';
             }
             slotsHtml += '</div>';
             timesDiv.innerHTML = slotsHtml;
-            
-            var freeSlots = document.querySelectorAll('.slot.free');
-            for(var fs = 0; fs < freeSlots.length; fs++) {
-                freeSlots[fs].onclick = function() {
-                    var allSlots = document.querySelectorAll('.slot');
-                    for(var asl = 0; asl < allSlots.length; asl++) allSlots[asl].style.border = '';
-                    this.style.border = '2px solid #FAC643';
-                    window.selectedSlot = { date: this.dataset.date, time: this.dataset.time };
-                };
+            if(!planningMode && currentUser.role !== 'admin') {
+                document.querySelectorAll('.slot.free').forEach(slot => {
+                    slot.onclick = function() {
+                        window.selectedSlot = { date: date, time: this.dataset.time };
+                        this.style.border = '2px solid #FAC643';
+                    };
+                });
             }
-        };
-        
-        var selectedDay = document.querySelector('.cal-day.selected');
-        if(selectedDay) renderTimeSlots(selectedDay.dataset.date);
-    }
-    
-    function renderUserDocs() {
-        var container = document.getElementById('userDocsList');
-        if(container) {
-            var userDocs = allDocuments.filter(function(d) { return d.userId === currentUser.login; });
-            var html = '';
-            for(var i = 0; i < userDocs.length; i++) {
-                html += '<div class="file-upload"><i class="fas fa-file"></i> ' + userDocs[i].fileName + ' (' + userDocs[i].uploadDate + ')</div>';
-            }
-            container.innerHTML = html || '<p>Нет документов</p>';
         }
-    }
-    
-    function renderAdminLinks() {
-        var div = document.getElementById('linksList');
-        if(div) {
-            var html = '';
-            for(var i = 0; i < newsLinks.length; i++) {
-                html += '<div class="flex-between"><span>🔗 <a href="' + newsLinks[i].url + '" target="_blank">' + newsLinks[i].name + '</a></span><button class="btn-outline del-link" data-idx="' + i + '">Удалить</button></div>';
-            }
-            div.innerHTML = html;
-            var delBtns = document.querySelectorAll('.del-link');
-            for(var b = 0; b < delBtns.length; b++) {
-                delBtns[b].onclick = function() {
-                    var idx = parseInt(this.dataset.idx);
-                    newsLinks.splice(idx, 1);
+        function showPlanningPanel(date) {
+            var panel = document.getElementById('timeSlotsArea');
+            panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn">+</button></div><div id="blockedPeriodsList"></div></div>';
+            renderBlockedPeriods(date);
+            document.getElementById('addBlockPeriodBtn').onclick = function() {
+                var start = document.getElementById('blockStart').value;
+                var end = document.getElementById('blockEnd').value;
+                if(start && end) {
+                    blockedSlots.push({ date: date, timeStart: start, timeEnd: end });
                     persistData();
-                    renderAdminLinks();
-                    showToast("Ссылка удалена", false);
-                };
-            }
+                    renderBlockedPeriods(date);
+                    showToast("Период заблокирован");
+                } else showToast("Выберите время", true);
+            };
         }
-    }
-    
-    function attachAdminEvents() {
-        var addSlotBtn = document.getElementById('addBlockSlotBtn');
-        if(addSlotBtn) {
-            addSlotBtn.onclick = function() {
-                var date = document.getElementById('blockDate').value;
-                var time = document.getElementById('blockTime').value;
-                if(date && time) {
-                    var already = false;
-                    for(var i = 0; i < blockedSlots.length; i++) {
-                        if(blockedSlots[i].date === date && blockedSlots[i].time === time) already = true;
-                    }
-                    if(!already) {
-                        blockedSlots.push({date: date, time: time});
+        function renderBlockedPeriods(date) {
+            var periods = blockedSlots.filter(b => b.date === date);
+            var listDiv = document.getElementById('blockedPeriodsList');
+            if(listDiv) {
+                listDiv.innerHTML = periods.map((p, idx) => '<div class="flex-between"><span>' + p.timeStart + ' — ' + p.timeEnd + '</span><div><button class="btn-outline edit-period" data-idx="' + idx + '"><i class="fas fa-pencil-alt"></i></button><button class="btn-outline del-period" data-idx="' + idx + '"><i class="fas fa-trash-alt"></i></button></div></div>').join('');
+                document.querySelectorAll('.del-period').forEach(btn => {
+                    btn.onclick = function() {
+                        var idx = parseInt(this.dataset.idx);
+                        blockedSlots = blockedSlots.filter((_,i) => !(blockedSlots[i].date === date && i === idx));
                         persistData();
-                        showToast('Слот ' + date + ' ' + time + ' заблокирован', false);
-                        renderDashboard();
-                    } else showToast("Слот уже заблокирован", true);
-                } else showToast("Заполните дату и время", true);
-            };
+                        renderBlockedPeriods(date);
+                        showToast("Период удалён");
+                    };
+                });
+                document.querySelectorAll('.edit-period').forEach(btn => {
+                    btn.onclick = function() {
+                        var idx = parseInt(this.dataset.idx);
+                        var period = blockedSlots.find((p,i) => i === idx && p.date === date);
+                        if(period) {
+                            var newStart = prompt("Новое время начала", period.timeStart);
+                            var newEnd = prompt("Новое время окончания", period.timeEnd);
+                            if(newStart && newEnd) {
+                                period.timeStart = newStart;
+                                period.timeEnd = newEnd;
+                                persistData();
+                                renderBlockedPeriods(date);
+                                showToast("Период обновлён");
+                            }
+                        }
+                    };
+                });
+            }
         }
-        
-        var addLinkBtn = document.getElementById('addLinkBtn');
-        if(addLinkBtn) {
-            addLinkBtn.onclick = function() {
-                var name = document.getElementById('newLinkName').value;
-                var url = document.getElementById('newLinkUrl').value;
-                if(name && url) {
-                    newsLinks.push({name: name, url: url});
-                    persistData();
-                    renderAdminLinks();
-                    showToast("Источник добавлен", false);
-                } else showToast("Заполните оба поля", true);
-            };
-        }
-        
-        var markBtns = document.querySelectorAll('.small-mark');
-        for(var m = 0; m < markBtns.length; m++) {
-            markBtns[m].onclick = function() {
-                var docId = parseInt(this.dataset.id);
-                for(var i = 0; i < allDocuments.length; i++) {
-                    if(allDocuments[i].id === docId) {
-                        allDocuments[i].adminSeen = true;
-                        allDocuments[i].status = 'seen';
-                        break;
-                    }
-                }
-                persistData();
-                renderDashboard();
-                showToast("Документ отмечен", false);
-            };
-        }
-        
-        var confirmBtns = document.querySelectorAll('.small-confirm');
-        for(var c = 0; c < confirmBtns.length; c++) {
-            confirmBtns[c].onclick = function() {
-                var appId = parseInt(this.dataset.id);
-                for(var i = 0; i < allAppointments.length; i++) {
-                    if(allAppointments[i].id === appId) {
-                        allAppointments[i].status = 'confirmed';
-                        break;
-                    }
-                }
-                persistData();
-                renderDashboard();
-                showToast("Запись подтверждена", false);
-            };
+        document.getElementById('planningToggleBtn')?.addEventListener('click', function() {
+            planningMode = !planningMode;
+            this.innerHTML = planningMode ? '<i class="fas fa-calendar-day"></i> Обычный режим' : '<i class="fas fa-calendar-plus"></i> Планирование';
+            var selectedDay = document.querySelector('.cal-day.selected');
+            if(selectedDay && selectedDay.dataset.date) {
+                if(planningMode) showPlanningPanel(selectedDay.dataset.date);
+                else if(currentUser.role === 'admin') showAppointmentsForDate(selectedDay.dataset.date);
+                else renderTimeSlots(selectedDay.dataset.date);
+            }
+        });
+        var selectedDay = document.querySelector('.cal-day.selected');
+        if(selectedDay) {
+            if(currentUser.role === 'admin') {
+                if(planningMode) showPlanningPanel(selectedDay.dataset.date);
+                else showAppointmentsForDate(selectedDay.dataset.date);
+            } else renderTimeSlots(selectedDay.dataset.date);
         }
     }
-    
+
     function attachDynamicEvents() {
         if(activeTab === 'documents') {
-            var uploadBtn = document.getElementById('uploadDocBtn');
-            if(uploadBtn) {
-                uploadBtn.onclick = function() {
-                    var fileInput = document.getElementById('docFileInput');
-                    var caseSelect = document.getElementById('docCaseSelect');
-                    var file = fileInput.files[0];
-                    var caseId = caseSelect ? caseSelect.value : null;
-                    if(file && caseId) {
-                        var newDoc = {
-                            id: Date.now(),
-                            userId: currentUser.login,
-                            caseId: parseInt(caseId),
-                            fileName: file.name,
-                            uploadDate: new Date().toISOString().slice(0,10),
-                            status: 'new',
-                            adminSeen: false
-                        };
-                        allDocuments.push(newDoc);
-                        persistData();
-                        showModal({ title: "Документ загружен", message: '"' + file.name + '" успешно загружен.', icon: "fas fa-check-circle", confirmText: "Отлично" });
-                        renderDashboard();
-                    } else showToast("Выберите файл", true);
-                };
-            }
+            document.getElementById('uploadDocBtn')?.addEventListener('click', function() {
+                var file = document.getElementById('docFileInput').files[0];
+                var caseId = document.getElementById('docCaseSelect')?.value;
+                if(file && caseId) {
+                    allDocuments.push({ id: Date.now(), userId: currentUser.login, caseId: parseInt(caseId), fileName: file.name, uploadDate: new Date().toISOString().slice(0,10), status: 'new', adminSeen: false });
+                    persistData();
+                    showModal({ title: "Документ загружен", message: '"' + file.name + '" загружен.', icon: "fas fa-check-circle", confirmText: "Отлично" });
+                    renderDashboard();
+                } else showToast("Выберите файл", true);
+            });
         }
-        if(activeTab === 'calendar') {
-            var bookBtn = document.getElementById('bookSlotBtn');
-            if(bookBtn) {
-                bookBtn.onclick = function() {
-                    if(window.selectedSlot) {
-                        var date = window.selectedSlot.date;
-                        var time = window.selectedSlot.time;
-                        var already = false;
-                        for(var i = 0; i < allAppointments.length; i++) {
-                            if(allAppointments[i].date === date && allAppointments[i].time === time && allAppointments[i].userId === currentUser.login) already = true;
-                        }
-                        var blocked = false;
-                        for(var j = 0; j < blockedSlots.length; j++) {
-                            if(blockedSlots[j].date === date && blockedSlots[j].time === time) blocked = true;
-                        }
-                        if(already) showToast("Вы уже записаны", true);
-                        else if(blocked) showToast("Слот занят", true);
-                        else {
-                            allAppointments.push({
-                                id: Date.now(),
-                                userId: currentUser.login,
-                                date: date,
-                                time: time,
-                                clientName: currentUser.login,
-                                status: 'pending'
-                            });
+        if(activeTab === 'calendar' && currentUser.role !== 'admin') {
+            document.getElementById('bookSlotBtn')?.addEventListener('click', function() {
+                if(window.selectedSlot) {
+                    var {date, time} = window.selectedSlot;
+                    var already = allAppointments.some(a => a.date === date && a.time === time && a.userId === currentUser.login);
+                    var blocked = blockedSlots.some(b => b.date === date && b.timeStart <= time && b.timeEnd >= time);
+                    if(already) showToast("Вы уже записаны", true);
+                    else if(blocked) showToast("Слот занят", true);
+                    else {
+                        var overlay = document.createElement('div');
+                        overlay.className = 'modal-overlay';
+                        overlay.innerHTML = '<div class="modal-container"><h3>Запись на приём</h3><input id="appointTopic" placeholder="Тема обращения"><input id="appointPhone" placeholder="Телефон"><div class="modal-buttons"><button id="confirmAppointBtn" class="btn">Записаться</button><button id="cancelAppointBtn" class="btn-outline">Отмена</button></div></div>';
+                        document.body.appendChild(overlay);
+                        document.getElementById('confirmAppointBtn').onclick = function() {
+                            var topic = document.getElementById('appointTopic').value;
+                            var phone = document.getElementById('appointPhone').value;
+                            allAppointments.push({ id: Date.now(), userId: currentUser.login, date, time, clientName: currentUser.login, topic, phone, status: 'pending' });
                             persistData();
-                            showModal({ title: "Запись создана", message: "Вы записаны на " + date + " в " + time + ".", icon: "fas fa-calendar-check", confirmText: "Понятно" });
+                            overlay.remove();
+                            showModal({ title: "Запись создана", message: "Вы записаны на " + date + " в " + time, icon: "fas fa-calendar-check", confirmText: "Понятно" });
                             renderDashboard();
-                        }
-                    } else showToast("Выберите время", true);
-                };
-            }
-            var myApps = allAppointments.filter(function(a) { return a.userId === currentUser.login; });
+                        };
+                        document.getElementById('cancelAppointBtn').onclick = function() { overlay.remove(); };
+                    }
+                } else showToast("Выберите время", true);
+            });
+            var myApps = allAppointments.filter(a => a.userId === currentUser.login);
             var listDiv = document.getElementById('myAppointmentsList');
-            if(listDiv) {
-                var appsHtml = '';
-                for(var i = 0; i < myApps.length; i++) {
-                    var statusText = myApps[i].status === 'pending' ? '⏳ ожидает' : '✅ подтверждён';
-                    appsHtml += '<div class="card"><i class="fas fa-clock"></i> ' + myApps[i].date + ' ' + myApps[i].time + ' — статус: ' + statusText + '</div>';
-                }
-                listDiv.innerHTML = appsHtml || '<p>Нет записей</p>';
-            }
+            if(listDiv) listDiv.innerHTML = myApps.map(a => '<div class="card"><i class="fas fa-clock"></i> ' + a.date + ' ' + a.time + ' — ' + (a.status==='pending'?'⏳ ожидает':'✅ подтверждён') + '</div>').join('');
         }
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.onclick = function() {
+                var subtab = this.dataset.subtab;
+                if(activeTab === 'cases') casesSubTab = subtab;
+                else if(activeTab === 'documents') casesSubTab = subtab;
+                renderDashboard();
+            };
+        });
+        document.querySelectorAll('.doc-link').forEach(link => {
+            link.onclick = function() {
+                var docName = this.innerText;
+                showModal({ title: "Документ", message: "Открыть файл: " + docName, icon: "fas fa-file-pdf", confirmText: "OK" });
+            };
+        });
     }
 
     function buildBottomNav() {
         var navDiv = document.getElementById('bottomNav');
         var isAdmin = currentUser && currentUser.role === 'admin';
-        var tabs = [
-            {id: 'cases', icon: 'fas fa-gavel', label: 'Дела'},
-            {id: 'calendar', icon: 'fas fa-calendar-alt', label: 'Календарь'},
-            {id: 'documents', icon: 'fas fa-file-alt', label: 'Документы'}
-        ];
-        if(isAdmin) tabs.push({id: 'admin', icon: 'fas fa-user-shield', label: 'Админ'});
-        
-        var navHtml = '';
-        for(var i = 0; i < tabs.length; i++) {
-            var activeClass = (activeTab === tabs[i].id) ? 'active' : '';
-            navHtml += '<div class="nav-item ' + activeClass + '" data-tab="' + tabs[i].id + '"><i class="' + tabs[i].icon + '"></i><span>' + tabs[i].label + '</span></div>';
-        }
-        navDiv.innerHTML = navHtml;
-        
-        var navItems = document.querySelectorAll('.nav-item');
-        for(var j = 0; j < navItems.length; j++) {
-            navItems[j].onclick = function(e) {
-                activeTab = this.dataset.tab;
-                renderDashboard();
-                var allItems = document.querySelectorAll('.nav-item');
-                for(var k = 0; k < allItems.length; k++) allItems[k].classList.remove('active');
-                this.classList.add('active');
-                history.pushState({tab: activeTab}, '', '#' + activeTab);
-            };
-        }
-        
-        window.onpopstate = function(e) {
-            if(e.state && e.state.tab) activeTab = e.state.tab;
-            else activeTab = 'cases';
-            renderDashboard();
-            var allItems = document.querySelectorAll('.nav-item');
-            for(var k = 0; k < allItems.length; k++) allItems[k].classList.remove('active');
-            var currentNav = document.querySelector('.nav-item[data-tab="' + activeTab + '"]');
-            if(currentNav) currentNav.classList.add('active');
-        };
-        
+        var tabs = [{id:'cases',icon:'fas fa-gavel',label:'Дела'},{id:'calendar',icon:'fas fa-calendar-alt',label:'Календарь'},{id:'documents',icon:'fas fa-file-alt',label:'Документы'}];
+        if(isAdmin) tabs.push({id:'admin',icon:'fas fa-user-shield',label:'Настройки'});
+        navDiv.innerHTML = tabs.map(tab => '<div class="nav-item ' + (activeTab===tab.id?'active':'') + '" data-tab="' + tab.id + '"><i class="' + tab.icon + '"></i><span>' + tab.label + '</span></div>').join('');
+        document.querySelectorAll('.nav-item').forEach(item => item.onclick = function() { activeTab = this.dataset.tab; casesSubTab = "current"; selectedArchiveCase = null; planningMode = false; renderDashboard(); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active'); history.pushState({tab:activeTab}, '', '#' + activeTab); });
+        window.onpopstate = function(e) { if(e.state && e.state.tab) activeTab = e.state.tab; else activeTab = 'cases'; selectedArchiveCase = null; renderDashboard(); };
         var touchStart = 0;
-        var dashboard = document.getElementById('appDashboard');
-        dashboard.ontouchstart = function(e) { touchStart = e.changedTouches[0].screenX; };
-        dashboard.ontouchend = function(e) {
+        document.getElementById('appDashboard').ontouchstart = function(e) { touchStart = e.changedTouches[0].screenX; };
+        document.getElementById('appDashboard').ontouchend = function(e) {
             var diff = e.changedTouches[0].screenX - touchStart;
             var order = isAdmin ? ['cases','calendar','documents','admin'] : ['cases','calendar','documents'];
             var idx = order.indexOf(activeTab);
             if(diff > 50 && idx > 0) activeTab = order[idx-1];
             if(diff < -50 && idx < order.length-1) activeTab = order[idx+1];
             renderDashboard();
-            var allItems = document.querySelectorAll('.nav-item');
-            for(var k = 0; k < allItems.length; k++) allItems[k].classList.remove('active');
-            var currentNav = document.querySelector('.nav-item[data-tab="' + activeTab + '"]');
-            if(currentNav) currentNav.classList.add('active');
-            history.pushState({tab: activeTab}, '', '#' + activeTab);
         };
     }
 
     async function handleLogin() {
         var login = document.getElementById('loginUsername').value.trim();
         var pass = document.getElementById('loginPassword').value.trim();
-        var consentChecked = document.getElementById('consentCheckbox').checked;
-        
-        if(!consentChecked) {
-            showModal({ title: "Требуется согласие", message: "Необходимо принять условия обработки ПД.", confirmText: "Понятно" });
-            return;
-        }
-        
+        if(!document.getElementById('consentCheckbox').checked) { showModal({ title: "Требуется согласие", message: "Необходимо принять условия обработки ПД.", confirmText: "Понятно" }); return; }
         if((login === 'user' && pass === 'user') || (login === 'admin' && pass === 'admin')) {
-            currentUser = { login: login, role: (login === 'admin' ? 'admin' : 'user'), id: login };
+            currentUser = { login, role: login === 'admin' ? 'admin' : 'user', id: login };
             persistData();
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('appDashboard').classList.remove('hidden');
-            activeTab = 'cases';
+            activeTab = 'cases'; casesSubTab = 'current'; selectedArchiveCase = null; planningMode = false;
             buildBottomNav();
             renderDashboard();
-            showToast("Добро пожаловать!", false);
-        } else {
-            showModal({ title: "Ошибка входа", message: "Неверный логин или пароль.\nКлиент: user/user\nАдмин: admin/admin", confirmText: "OK" });
-        }
+            showToast("Добро пожаловать!");
+        } else showModal({ title:"Ошибка входа", message:"Неверный логин или пароль.\nКлиент: user/user\nАдмин: admin/admin", confirmText:"OK" });
     }
 
     function init() {
-        initMockData();
-        loadPersistedData();
-        renderNewsOnLogin();
-        setupConsent();
+        initMockData(); loadPersistedData(); renderNewsOnLogin();
+        var chk = document.getElementById('consentCheckbox');
+        var btn = document.getElementById('doLoginBtn');
+        document.querySelectorAll('.consent-link').forEach(link => {
+            link.addEventListener('click', async function(e) {
+                e.preventDefault();
+                var docName = this.dataset.doc;
+                var title = docName === 'personal-data-consent' ? 'Согласие на обработку ПД' : docName === 'privacy-policy' ? 'Политика конфиденциальности' : 'Пользовательское соглашение';
+                var content = await loadDocumentContent(docName);
+                showDocumentModal(title, content);
+            });
+        });
+        chk.onchange = function() { btn.disabled = !chk.checked; };
         document.getElementById('doLoginBtn').onclick = handleLogin;
-        var logoutBtn = document.getElementById('logoutBtn');
-        if(logoutBtn) logoutBtn.addEventListener('click', logout);
-        if(currentUser) {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('appDashboard').classList.remove('hidden');
-            buildBottomNav();
-            renderDashboard();
-        }
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+        document.getElementById('addressCopy')?.addEventListener('click', function() {
+            navigator.clipboard.writeText(this.innerText);
+            showToast("Адрес скопирован");
+        });
+        document.getElementById('mapToggleBtn')?.addEventListener('click', function() {
+            document.getElementById('mapContainer').classList.toggle('map-collapsed');
+        });
+        if(currentUser) { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appDashboard').classList.remove('hidden'); buildBottomNav(); renderDashboard(); }
     }
-    
     init();
-    
-    if('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sovet-yurista/sw.js').catch(function(e) { console.log('SW error:', e); });
-    }
+    if('serviceWorker' in navigator) navigator.serviceWorker.register('/sovet-yurista/sw.js').catch(e=>console.log);
 </script>
 </body>
 </html>
