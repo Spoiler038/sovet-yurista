@@ -307,7 +307,7 @@
             });
             if(!document.getElementById('aiSummaryBtn')) {
                 var btn = document.createElement('button');
-                btn.className = 'btn-outline'; btn.id = 'aiSummaryBtn'; btn.innerHTML = '<i class="fas fa-robot"></i> Сводка ИИ'; btn.style.margin = '12px 0 0 0'; btn.style.width = '100%';
+                btn.className = 'btn-outline'; btn.id = 'aiSummaryBtn'; btn.innerHTML = '<i class="fas fa-robot"></i> Сводка ИИ'; btn.style.margin = '0 0 12px 0'; btn.style.width = '100%';
                 btn.onclick = function() { showModal({ title: "Аналитика от ИИ", message: "Усиление защиты прав потребителей, послабления для МСП, новые разъяснения ВС РФ.", icon: "fas fa-brain", confirmText: "Понятно" }); };
                 container.parentNode.insertBefore(btn, container.nextSibling);
             }
