@@ -4,41 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>ООО ЮК "СОВЕТ ЮРИСТА" — Юридическая защита бизнеса и граждан</title>
-    <!-- PWA manifest -->
     <link rel="manifest" href="https://spoiler038.github.io/sovet-yurista/manifest.json">
     <meta name="theme-color" content="#1C1D21">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://spoiler038.github.io/sovet-yurista/icons/favicon.svg">
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0B0C10 0%, #1C1D21 100%); color: #ffffff; min-height: 100vh; overflow-x: hidden; }
-        .app-container { max-width: 600px; margin: 0 auto; width: 100%; background: #1C1D21; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; }
+        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0B0C10 0%, #1C1D21 100%); color: #fff; min-height: 100vh; overflow-x: hidden; }
+        .app-container { max-width: 600px; margin: 0 auto; width: 100%; background: #1C1D21; min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow-x: hidden; }
         .main-content { flex: 1; padding: 20px 18px 80px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        /* Bottom navigation */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; background: rgba(28, 29, 33, 0.96); backdrop-filter: blur(12px); display: flex; justify-content: space-around; align-items: center; padding: 8px 12px 14px; border-top: 1px solid rgba(250, 198, 67, 0.2); z-index: 20; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #8E8E93; font-size: 11px; transition: 0.2s; cursor: pointer; flex: 1; padding: 6px 0; border-radius: 16px; }
-        .nav-item i { font-size: 22px; }
-        .nav-item.active { color: #FAC643; background: rgba(250, 198, 67, 0.12); }
-        /* Cards */
-        .card, .glass-card { background: rgba(46, 47, 53, 0.85); border-radius: 28px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(8px); border: 1px solid rgba(250, 198, 67, 0.15); }
-        h2 { font-family: 'Syne', sans-serif; font-size: 1.7rem; margin-bottom: 12px; color: #FAC643; letter-spacing: -0.5px; }
-        h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 10px; }
-        .btn, button { background: linear-gradient(95deg, #FAC643 0%, #E0AD2E 100%); border: none; padding: 12px 24px; border-radius: 60px; font-weight: 600; font-family: 'Poppins', sans-serif; color: #111; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
-        .btn-outline { background: transparent; border: 1.5px solid #FAC643; color: #FAC643; box-shadow: none; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        input, select, textarea { background: #2E2F35; border: 1px solid #3D3E45; border-radius: 40px; padding: 12px 18px; color: white; width: 100%; margin-bottom: 16px; font-family: 'Poppins', sans-serif; transition: 0.2s; }
-        input:focus { border-color: #FAC643; outline: none; }
-        /* Чекбокс согласия */
-        .consent-checkbox { display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; padding: 12px 0; }
-        .consent-checkbox input { width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: #FAC643; flex-shrink: 0; margin-top: 2px; }
-        .consent-checkbox label { font-size: 13px; line-height: 1.4; color: #ddd; }
-        .consent-link { color: #FAC643; text-decoration: none; font-weight: 500; cursor: pointer; border-bottom: 1px dashed #FAC643; }
-        .consent-link:hover { color: #ffd966; }
-        /* Анимированные новости (выезжают сбоку) */
+        
+        /* Контейнер новостей с overflow hidden для эффекта выезжания */
+        .news-container { overflow-x: hidden; position: relative; margin: 16px 0; }
         .news-item {
             border-left: 4px solid #FAC643;
             padding: 14px 16px;
@@ -46,138 +26,166 @@
             background: #25262B;
             border-radius: 20px;
             opacity: 0;
-            transform: translateX(-30px);
-            animation: slideInNews 0.4s ease forwards;
+            transform: translateX(-140px);
+            animation: slideInNews 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
             transition: all 0.3s;
         }
-        .news-item:nth-child(1) { animation-delay: 0.05s; }
-        .news-item:nth-child(2) { animation-delay: 0.15s; }
-        .news-item:nth-child(3) { animation-delay: 0.25s; }
-        .news-item:nth-child(4) { animation-delay: 0.35s; }
-        .news-item:nth-child(5) { animation-delay: 0.45s; }
+        .news-item:hover { transform: translateX(4px); border-left-width: 6px; }
+        .news-item:nth-child(1) { animation-delay: 0.02s; }
+        .news-item:nth-child(2) { animation-delay: 0.12s; }
+        .news-item:nth-child(3) { animation-delay: 0.22s; }
+        .news-item:nth-child(4) { animation-delay: 0.32s; }
         @keyframes slideInNews {
-            from { opacity: 0; transform: translateX(-40px); }
-            to { opacity: 1; transform: translateX(0); }
+            0% { opacity: 0; transform: translateX(-140px); }
+            100% { opacity: 1; transform: translateX(0); }
         }
-        .slot { background: #2E2F35; border-radius: 40px; padding: 10px 18px; margin: 6px; display: inline-block; cursor: pointer; transition: 0.15s; font-weight: 500; }
+        
+        /* Шапка с кнопкой выхода */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: rgba(28, 29, 33, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(250, 198, 67, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 15;
+        }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .user-avatar {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #FAC643, #E0AD2E);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #111; font-size: 18px;
+        }
+        .user-name { font-weight: 600; font-size: 14px; }
+        .user-role { font-size: 11px; opacity: 0.7; }
+        .logout-btn {
+            background: rgba(250, 198, 67, 0.15);
+            border: 1px solid rgba(250, 198, 67, 0.3);
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #FAC643;
+        }
+        .logout-btn:hover { background: rgba(250, 198, 67, 0.3); }
+        
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; background: rgba(28,29,33,0.96); backdrop-filter: blur(12px); display: flex; justify-content: space-around; padding: 8px 12px 14px; border-top: 1px solid rgba(250,198,67,0.2); z-index: 20; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #8E8E93; font-size: 11px; cursor: pointer; flex: 1; padding: 6px 0; border-radius: 16px; }
+        .nav-item i { font-size: 22px; }
+        .nav-item.active { color: #FAC643; background: rgba(250, 198, 67, 0.12); }
+        
+        .card, .glass-card { background: rgba(46,47,53,0.85); border-radius: 28px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(8px); border: 1px solid rgba(250,198,67,0.15); }
+        h2 { font-family: 'Syne', sans-serif; font-size: 1.5rem; margin-bottom: 12px; color: #FAC643; }
+        h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 10px; }
+        .btn, button { background: linear-gradient(95deg, #FAC643 0%, #E0AD2E 100%); border: none; padding: 12px 24px; border-radius: 60px; font-weight: 600; color: #111; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
+        .btn-outline { background: transparent; border: 1.5px solid #FAC643; color: #FAC643; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        input, select { background: #2E2F35; border: 1px solid #3D3E45; border-radius: 40px; padding: 12px 18px; color: white; width: 100%; margin-bottom: 16px; }
+        input:focus { border-color: #FAC643; outline: none; }
+        
+        .consent-checkbox { display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; padding: 12px 0; }
+        .consent-checkbox input { width: 22px; height: 22px; margin: 0; accent-color: #FAC643; flex-shrink: 0; margin-top: 2px; }
+        .consent-checkbox label { font-size: 13px; color: #ddd; }
+        .consent-link { color: #FAC643; cursor: pointer; border-bottom: 1px dashed #FAC643; }
+        
+        .slot { background: #2E2F35; border-radius: 40px; padding: 10px 18px; margin: 6px; display: inline-block; cursor: pointer; font-weight: 500; }
         .slot.free { background: #3A3B44; }
-        .slot.free:active { background: #FAC643; color: #111; transform: scale(0.96);}
         .slot.booked { opacity: 0.4; cursor: not-allowed; background: #555; }
         .case-item { background: #25262B; border-radius: 24px; padding: 18px; margin-bottom: 14px; }
         .status-badge { background: #FAC64320; color: #FAC643; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; display: inline-block; }
-        /* Модальные окна */
+        
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s ease; }
-        .modal-container { max-width: 90%; width: 340px; background: linear-gradient(145deg, #25262F, #1C1D24); border-radius: 48px; padding: 28px 24px 32px; text-align: center; border: 1px solid rgba(250,198,67,0.3); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: slideUp 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1); max-height: 80vh; overflow-y: auto; }
+        .modal-container { max-width: 90%; width: 340px; background: linear-gradient(145deg, #25262F, #1C1D24); border-radius: 48px; padding: 28px 24px 32px; text-align: center; border: 1px solid rgba(250,198,67,0.3); animation: slideUp 0.25s; max-height: 80vh; overflow-y: auto; }
         .modal-container-large { width: 90%; max-width: 500px; text-align: left; }
-        .modal-icon { font-size: 52px; color: #FAC643; margin-bottom: 16px; text-align: center; }
-        .modal-container h3 { font-size: 1.5rem; margin-bottom: 16px; color: #FAC643; text-align: center; }
-        .modal-container p { font-size: 14px; line-height: 1.5; margin-bottom: 12px; color: #e0e0e0; }
+        .modal-icon { font-size: 52px; color: #FAC643; margin-bottom: 16px; }
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; justify-content: center; }
-        .modal-buttons button { flex: 1; padding: 12px; font-size: 15px; margin: 0; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
         .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; margin: 16px 0; }
-        .cal-day { text-align: center; padding: 10px 0; background: #2E2F35; border-radius: 40px; font-size: 14px; cursor: pointer; transition: 0.1s; }
+        .cal-day { text-align: center; padding: 10px 0; background: #2E2F35; border-radius: 40px; font-size: 14px; cursor: pointer; }
         .cal-day.selected { background: #FAC643; color: #111; font-weight: bold; }
         .time-slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .file-upload { background: #2E2F35; border-radius: 40px; padding: 12px 16px; margin: 8px 0; }
         hr { border-color: #3D3E45; margin: 16px 0; }
-        .toast-msg { position: fixed; bottom: 90px; left: 20px; right: 20px; max-width: 560px; margin: 0 auto; background: #2E2F35E6; backdrop-filter: blur(12px); padding: 12px 20px; border-radius: 60px; text-align: center; font-weight: 500; z-index: 1100; animation: fadeIn 0.2s; border-left: 5px solid #FAC643; }
+        .toast-msg { position: fixed; bottom: 90px; left: 20px; right: 20px; background: #2E2F35E6; backdrop-filter: blur(12px); padding: 12px 20px; border-radius: 60px; text-align: center; z-index: 1100; border-left: 5px solid #FAC643; }
         .map-placeholder { border-radius: 24px; overflow: hidden; margin: 16px 0; }
         .hidden { display: none !important; }
-        .legal-text-content { white-space: pre-wrap; font-family: monospace; font-size: 12px; background: #1a1a1e; padding: 16px; border-radius: 20px; margin: 12px 0; max-height: 400px; overflow-y: auto; }
-        .logo-icon { font-size: 52px; color: #FAC643; filter: drop-shadow(0 0 6px rgba(250,198,67,0.3)); transition: all 0.3s; }
-        .logo-icon:hover { transform: scale(1.02); filter: drop-shadow(0 0 12px #FAC643); }
-        .company-name { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; letter-spacing: -0.3px; background: linear-gradient(135deg, #FAC643, #FFD966); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .legal-text-content { white-space: pre-wrap; font-size: 12px; background: #1a1a1e; padding: 16px; border-radius: 20px; margin: 12px 0; max-height: 400px; overflow-y: auto; }
+        .logo-icon { width: 48px; height: 48px; }
+        .company-name { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; background: linear-gradient(135deg, #FAC643, #FFD966); -webkit-background-clip: text; background-clip: text; color: transparent; }
     </style>
 </head>
 <body>
 <div class="app-container" id="appRoot">
-    <!-- Экран входа с чекбоксом согласия -->
     <div id="loginScreen">
         <div class="glass-card" style="margin: 20px 18px;">
             <div style="display:flex; justify-content:center; margin-bottom:16px;">
-                <img src="https://spoiler038.github.io/sovet-yurista/icons/favicon.svg" alt="Логотип" class="logo-icon" style="width: 64px; height: 64px; filter: drop-shadow(0 0 6px rgba(250,198,67,0.5));" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <i class="fas fa-gavel" style="font-size:52px; color:#FAC643; display:none;"></i>
+                <img src="https://spoiler038.github.io/sovet-yurista/icons/favicon.svg" alt="Логотип" class="logo-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <i class="fas fa-gavel" style="font-size:48px; color:#FAC643; display:none;"></i>
             </div>
-            <h2 style="text-align:center;" class="company-name">ООО ЮК "СОВЕТ ЮРИСТА"</h2>
-            <div id="newsFeed"></div>
+            <h2 class="company-name" style="text-align:center;">ООО ЮК "СОВЕТ ЮРИСТА"</h2>
+            <div class="news-container" id="newsFeed"></div>
             <div class="map-placeholder">
                 <iframe src="https://yandex.ru/map-widget/v1/?ll=36.192233%2C55.702596&z=16&l=map&pt=36.192233,55.702596,pm2rdm" style="height:200px; width:100%; border:0;" allowfullscreen></iframe>
             </div>
-            <h3 style="margin-top:10px;">Вход в личный кабинет</h3>
+            <h3>Вход в личный кабинет</h3>
             <input type="text" id="loginUsername" placeholder="Логин (user / admin)">
             <input type="password" id="loginPassword" placeholder="Пароль (user / admin)">
-            
-            <!-- Чекбокс согласия на обработку ПД + ссылки -->
             <div class="consent-checkbox">
                 <input type="checkbox" id="consentCheckbox">
                 <label for="consentCheckbox">
                     Я ознакомлен и согласен с 
-                    <span class="consent-link" data-doc="personal-data-consent">условиями обработки персональных данных</span>, 
+                    <span class="consent-link" data-doc="personal-data-consent">условиями обработки ПД</span>, 
                     <span class="consent-link" data-doc="privacy-policy">политикой конфиденциальности</span> и 
-                    <span class="consent-link" data-doc="user-agreement">пользовательским соглашением</span>, 
-                    а также даю согласие на хранение и использование cookies.
+                    <span class="consent-link" data-doc="user-agreement">пользовательским соглашением</span>
                 </label>
             </div>
-            
             <button id="doLoginBtn" class="btn" style="width:100%" disabled><i class="fas fa-arrow-right-to-bracket"></i> Войти</button>
-            <p style="font-size:12px; margin-top:14px; text-align:center; opacity:0.7;">demo: user/user (клиент) | admin/admin</p>
+            <p style="font-size:12px; margin-top:14px; text-align:center;">demo: user/user (клиент) | admin/admin</p>
         </div>
     </div>
 
-    <!-- Основное приложение -->
     <div id="appDashboard" class="hidden" style="display:flex; flex-direction:column; height:100%;">
+        <div class="dashboard-header">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div><div class="user-name" id="userName">Пользователь</div><div class="user-role" id="userRole">Клиент</div></div>
+            </div>
+            <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+        </div>
         <div class="main-content" id="mainContent"></div>
         <div class="bottom-nav" id="bottomNav"></div>
     </div>
 </div>
 
 <script>
-    // ---------- ГЛОБАЛЬНЫЕ ДАННЫЕ ----------
     let currentUser = null;
-    let allCases = [];
-    let allDocuments = [];
-    let allAppointments = [];
-    let blockedSlots = [];
-    let newsLinks = [];
-    let newsArticles = [];
+    let allCases = [], allDocuments = [], allAppointments = [], blockedSlots = [], newsLinks = [], newsArticles = [];
 
-    // Функция загрузки текста документа из папки /docs/ (с полным путём GitHub Pages)
     async function loadDocumentContent(docName) {
         const baseUrl = 'https://spoiler038.github.io/sovet-yurista/';
-        const docUrl = `${baseUrl}docs/${docName}.txt`;
         try {
-            const response = await fetch(docUrl);
-            if (!response.ok) throw new Error('Документ не найден');
-            const text = await response.text();
-            return text;
-        } catch (error) {
-            console.error('Ошибка загрузки документа:', error);
-            return `[Документ "${docName}.txt" не найден. Пожалуйста, убедитесь, что файл существует в папке /docs/ вашего репозитория.\n\nПуть: ${docUrl}\n\nПример содержимого для ${docName}:\n\n1. Общие положения\n2. Цели обработки персональных данных\n3. Права субъекта\n4. Заключительные положения\n\nДата публикации: 01.06.2026 г.]`;
-        }
+            const res = await fetch(`${baseUrl}docs/${docName}.txt`);
+            if (!res.ok) throw new Error();
+            return await res.text();
+        } catch { return `[Документ "${docName}.txt" не найден в папке /docs/]`; }
     }
 
-    // Показать модальное окно с текстом документа
     function showDocumentModal(title, content) {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
-        overlay.innerHTML = `
-            <div class="modal-container modal-container-large">
-                <div class="modal-icon"><i class="fas fa-file-alt"></i></div>
-                <h3>${title}</h3>
-                <div class="legal-text-content">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-                <div class="modal-buttons">
-                    <button id="modalCloseBtn" class="btn">Закрыть</button>
-                </div>
-            </div>
-        `;
+        overlay.innerHTML = `<div class="modal-container modal-container-large"><div class="modal-icon"><i class="fas fa-file-alt"></i></div><h3>${title}</h3><div class="legal-text-content">${content.replace(/</g, '&lt;')}</div><div class="modal-buttons"><button id="modalCloseBtn" class="btn">Закрыть</button></div></div>`;
         document.body.appendChild(overlay);
-        const closeBtn = overlay.querySelector('#modalCloseBtn');
-        const close = () => overlay.remove();
-        closeBtn.onclick = close;
-        overlay.addEventListener('click', (e) => { if(e.target === overlay) close(); });
+        overlay.querySelector('#modalCloseBtn').onclick = () => overlay.remove();
+        overlay.onclick = (e) => { if(e.target === overlay) overlay.remove(); };
     }
 
     function initMockData() {
@@ -189,127 +197,127 @@
         ];
         allDocuments = [
             { id: 101, userId: "user", caseId: 1, fileName: "Исковое заявление.pdf", uploadDate: "2026-05-20", status: "new", adminSeen: false },
-            { id: 102, userId: "user", caseId: 2, fileName: "Решение суда.pdf", uploadDate: "2026-04-10", status: "seen", adminSeen: true },
+            { id: 102, userId: "user", caseId: 2, fileName: "Решение суда.pdf", uploadDate: "2026-04-10", status: "seen", adminSeen: true }
         ];
-        allAppointments = [
-            { id: 201, userId: "user", date: "2026-06-15", time: "14:00", clientName: "Иван П.", status: "pending" }
-        ];
-        blockedSlots = [
-            { date: "2026-06-12", time: "10:00" },
-            { date: "2026-06-12", time: "11:00" }
-        ];
+        allAppointments = [{ id: 201, userId: "user", date: "2026-06-15", time: "14:00", clientName: "Иван П.", status: "pending" }];
+        blockedSlots = [{ date: "2026-06-12", time: "10:00" }, { date: "2026-06-12", time: "11:00" }];
         newsLinks = [{ url: "https://www.consultant.ru", name: "Консультант+" }];
         newsArticles = [
-            { title: "Изменения в ГК РФ", summary: "Новые правила цифровых прав и защиты потребителей. Вступают в силу с 1 сентября 2026 года.", date: "2026-06-01" },
-            { title: "Верховный суд о субсидиарной ответственности", summary: "Ужесточение позиции по контролирующим лицам. Новые разъяснения для арбитражных судов.", date: "2026-05-28" },
-            { title: "Мораторий на проверки бизнеса", summary: "Продлен до 2027 года, поддержка предпринимателей в условиях санкций.", date: "2026-05-25" },
-            { title: "Упрощение регистрации ООО", summary: "Новый порядок подачи документов через портал Госуслуг без нотариуса.", date: "2026-05-20" }
+            { title: "Изменения в ГК РФ", summary: "Новые правила цифровых прав и защиты потребителей.", date: "2026-06-01" },
+            { title: "ВС РФ о субсидиарной ответственности", summary: "Ужесточение позиции по контролирующим лицам.", date: "2026-05-28" },
+            { title: "Мораторий на проверки бизнеса", summary: "Продлен до 2027 года.", date: "2026-05-25" },
+            { title: "Упрощение регистрации ООО", summary: "Новый порядок через Госуслуги.", date: "2026-05-20" }
         ];
     }
+    
     function persistData() { localStorage.setItem("legalAppData", JSON.stringify({ allCases, allDocuments, allAppointments, blockedSlots, newsLinks, newsArticles, currentUser })); }
     function loadPersistedData() { const raw = localStorage.getItem("legalAppData"); if(raw) { try { const d=JSON.parse(raw); allCases=d.allCases||allCases; allDocuments=d.allDocuments||allDocuments; allAppointments=d.allAppointments||allAppointments; blockedSlots=d.blockedSlots||blockedSlots; newsLinks=d.newsLinks||newsLinks; newsArticles=d.newsArticles||newsArticles; if(d.currentUser) currentUser=d.currentUser; } catch(e){} } }
 
-    // Модальные окна и тосты
     function showModal({ title, message, icon = "fas fa-info-circle", onConfirm, confirmText = "OK", showCancel = false, onCancel = null }) {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
-        overlay.innerHTML = `
-            <div class="modal-container">
-                <div class="modal-icon"><i class="${icon}"></i></div>
-                <h3>${title}</h3>
-                <p style="font-size:15px; line-height:1.4; opacity:0.9;">${message}</p>
-                <div class="modal-buttons">
-                    ${showCancel ? `<button class="btn-outline" id="modalCancelBtn">Отмена</button>` : ''}
-                    <button id="modalConfirmBtn" class="btn">${confirmText}</button>
-                </div>
-            </div>
-        `;
+        overlay.innerHTML = `<div class="modal-container"><div class="modal-icon"><i class="${icon}"></i></div><h3>${title}</h3><p>${message}</p><div class="modal-buttons">${showCancel ? '<button class="btn-outline" id="modalCancelBtn">Отмена</button>' : ''}<button id="modalConfirmBtn" class="btn">${confirmText}</button></div></div>`;
         document.body.appendChild(overlay);
-        const confirmBtn = overlay.querySelector('#modalConfirmBtn');
-        const cancelBtn = overlay.querySelector('#modalCancelBtn');
         const close = () => overlay.remove();
-        confirmBtn.onclick = () => { if(onConfirm) onConfirm(); close(); };
-        if(cancelBtn) cancelBtn.onclick = () => { if(onCancel) onCancel(); close(); };
-        overlay.addEventListener('click', (e) => { if(e.target === overlay) close(); });
+        overlay.querySelector('#modalConfirmBtn').onclick = () => { if(onConfirm) onConfirm(); close(); };
+        if(showCancel) overlay.querySelector('#modalCancelBtn').onclick = () => { if(onCancel) onCancel(); close(); };
+        overlay.onclick = (e) => { if(e.target === overlay) close(); };
     }
-    function showToast(message, isError = false) {
+    
+    function showToast(msg, isErr = false) {
         const toast = document.createElement('div');
         toast.className = 'toast-msg';
-        toast.style.borderLeftColor = isError ? '#e74c3c' : '#FAC643';
-        toast.innerHTML = `<i class="${isError ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle'}" style="margin-right:10px;"></i> ${message}`;
+        toast.innerHTML = `<i class="${isErr ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle'}"></i> ${msg}`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2500);
     }
 
-    // Новости на экране входа с анимацией
+    function logout() {
+        showModal({ title: "Выход", message: "Вы действительно хотите выйти?", confirmText: "Да, выйти", showCancel: true, onConfirm: () => {
+            currentUser = null;
+            persistData();
+            document.getElementById('appDashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('consentCheckbox').checked = false;
+            document.getElementById('doLoginBtn').disabled = true;
+            showToast("Вы вышли из системы");
+        }});
+    }
+
     function renderNewsOnLogin() {
         const container = document.getElementById('newsFeed');
         if(container) {
-            container.innerHTML = newsArticles.map(art => `<div class="news-item"><div class="flex-between"><strong>${art.title}</strong><span style="font-size:10px;">${art.date}</span></div><p style="font-size:13px; margin-top:6px;">${art.summary}</p></div>`).join('');
+            container.innerHTML = newsArticles.map(art => `<div class="news-item"><div class="flex-between"><strong>${art.title}</strong><span style="font-size:10px;">${art.date}</span></div><p style="font-size:13px;">${art.summary}</p></div>`).join('');
             if(!document.getElementById('aiSummaryBtn')) {
-                const aiBtn = document.createElement('button');
-                aiBtn.className = 'btn-outline';
-                aiBtn.id = 'aiSummaryBtn';
-                aiBtn.innerHTML = '<i class="fas fa-robot"></i> Сводка ИИ';
-                aiBtn.style.margin = '12px 0 0 0';
-                aiBtn.style.width = '100%';
-                aiBtn.onclick = () => showModal({ title: "🤖 Аналитика от ИИ", message: "На основе последних новостей: усиление защиты прав потребителей, послабления для МСП, новые разъяснения ВС РФ по корпоративным спорам. Рекомендуем обновить договорную базу и провести аудит кадровых документов.", icon: "fas fa-brain", confirmText: "Понятно" });
-                container.parentNode.insertBefore(aiBtn, container.nextSibling);
+                const btn = document.createElement('button');
+                btn.className = 'btn-outline';
+                btn.id = 'aiSummaryBtn';
+                btn.innerHTML = '<i class="fas fa-robot"></i> Сводка ИИ';
+                btn.style.margin = '12px 0 0 0';
+                btn.style.width = '100%';
+                btn.onclick = () => showModal({ title: "Аналитика от ИИ", message: "Усиление защиты прав потребителей, послабления для МСП, новые разъяснения ВС РФ.", icon: "fas fa-brain", confirmText: "Понятно" });
+                container.parentNode.insertBefore(btn, container.nextSibling);
             }
         }
     }
 
-    // Управление чекбоксом и кнопкой входа
-    function setupConsentCheckbox() {
-        const checkbox = document.getElementById('consentCheckbox');
-        const loginBtn = document.getElementById('doLoginBtn');
-        
-        // Обработчики кликабельных ссылок на документы
+    function setupConsent() {
+        const chk = document.getElementById('consentCheckbox');
+        const btn = document.getElementById('doLoginBtn');
         document.querySelectorAll('.consent-link').forEach(link => {
             link.addEventListener('click', async (e) => {
                 e.preventDefault();
-                const docName = link.dataset.doc;
-                let title = '';
-                switch(docName) {
-                    case 'personal-data-consent': title = 'Согласие на обработку персональных данных'; break;
-                    case 'privacy-policy': title = 'Политика конфиденциальности'; break;
-                    case 'user-agreement': title = 'Пользовательское соглашение'; break;
-                    default: title = 'Юридический документ';
-                }
-                const content = await loadDocumentContent(docName);
-                showDocumentModal(title, content);
+                let title = { 'personal-data-consent': 'Согласие на обработку ПД', 'privacy-policy': 'Политика конфиденциальности', 'user-agreement': 'Пользовательское соглашение' }[link.dataset.doc] || 'Документ';
+                showDocumentModal(title, await loadDocumentContent(link.dataset.doc));
             });
         });
-        
-        checkbox.addEventListener('change', () => {
-            loginBtn.disabled = !checkbox.checked;
-        });
+        chk.onchange = () => btn.disabled = !chk.checked;
     }
 
     let activeTab = "cases";
+    
     function renderDashboard() {
         if(!currentUser) return;
+        document.getElementById('userAvatar').textContent = currentUser.login.charAt(0).toUpperCase();
+        document.getElementById('userName').textContent = currentUser.login === 'admin' ? 'Администратор' : currentUser.login;
+        document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Администратор' : 'Клиент';
+        
         const container = document.getElementById('mainContent');
         const isAdmin = currentUser.role === 'admin';
         let html = '';
+        
         if(activeTab === 'cases') {
             const userCases = allCases.filter(c => c.userId === currentUser.login);
-            const currentCase = userCases.find(c => c.status === "В процессе");
-            const pastCases = userCases.filter(c => c.status !== "В процессе");
-            html = `<div><h2><i class="fas fa-briefcase"></i> Мои дела</h2>`;
-            if(currentCase) html += `<div class="case-item"><div class="flex-between"><h3>${currentCase.title}</h3><span class="status-badge">${currentCase.status}</span></div><p>${currentCase.stage}</p><div style="background:#333; border-radius:30px; height:8px; margin:12px 0;"><div style="width:${currentCase.progress}%; background:#FAC643; height:8px; border-radius:30px;"></div></div><p>Прогресс: ${currentCase.progress}%</p></div>`;
+            const curr = userCases.find(c => c.status === "В процессе");
+            const past = userCases.filter(c => c.status !== "В процессе");
+            html = `<h2><i class="fas fa-briefcase"></i> Мои дела</h2>`;
+            if(curr) html += `<div class="case-item"><div class="flex-between"><h3>${curr.title}</h3><span class="status-badge">${curr.status}</span></div><p>${curr.stage}</p><div style="background:#333; border-radius:30px; height:8px; margin:12px 0;"><div style="width:${curr.progress}%; background:#FAC643; height:8px; border-radius:30px;"></div></div><p>Прогресс: ${curr.progress}%</p></div>`;
             else html += `<div class="card">✨ Активных дел нет</div>`;
-            if(pastCases.length) { html += `<h2 style="margin-top:24px;">✅ Завершённые дела</h2>`; pastCases.forEach(c=>{ html+=`<div class="case-item"><strong>${c.title}</strong><p>Результат: ${c.result || 'Завершено'}</p></div>`; });}
-            html += `</div>`;
-        } else if(activeTab === 'calendar') {
-            html = `<div><h2><i class="fas fa-calendar-alt"></i> Запись на приём</h2><div class="card"><div id="simpleCalendar"></div><div id="timeSlotsArea"></div><button id="bookSlotBtn" class="btn" style="margin-top:20px; width:100%;"><i class="fas fa-check"></i> Записаться</button></div><h3>📋 Мои записи</h3><div id="myAppointmentsList"></div></div>`;
-        } else if(activeTab === 'documents') {
-            html = `<div><h2><i class="fas fa-file-alt"></i> Документы</h2><div class="card"><h3>📤 Загрузить документ</h3><select id="docCaseSelect">${allCases.filter(c=>c.userId===currentUser.login).map(c=>`<option value="${c.id}">${c.title}</option>`).join('')}</select><input type="file" id="docFileInput" accept=".pdf,.doc,.jpg,.png"><button id="uploadDocBtn" class="btn" style="width:100%;"><i class="fas fa-cloud-upload-alt"></i> Загрузить</button></div><h3>📁 Загруженные документы</h3><div id="userDocsList"></div></div>`;
-        } else if(activeTab === 'admin' && isAdmin) {
+            if(past.length) { html += `<h2 style="margin-top:24px;">✅ Завершённые дела</h2>`; past.forEach(c=> html+=`<div class="case-item"><strong>${c.title}</strong><p>Результат: ${c.result}</p></div>`); }
+        }
+        else if(activeTab === 'calendar') {
+            html = `<h2><i class="fas fa-calendar-alt"></i> Запись на приём</h2><div class="card"><div id="simpleCalendar"></div><div id="timeSlotsArea"></div><button id="bookSlotBtn" class="btn" style="margin-top:20px; width:100%;"><i class="fas fa-check"></i> Записаться</button></div><h3>Мои записи</h3><div id="myAppointmentsList"></div>`;
+        }
+        else if(activeTab === 'documents') {
+            html = `<h2><i class="fas fa-file-alt"></i> Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">${allCases.filter(c=>c.userId===currentUser.login).map(c=>`<option value="${c.id}">${c.title}</option>`).join('')}</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn" style="width:100%;"><i class="fas fa-cloud-upload-alt"></i> Загрузить</button></div><h3>Загруженные документы</h3><div id="userDocsList"></div>`;
+        }
+        else if(activeTab === 'admin' && isAdmin) {
             const newDocs = allDocuments.filter(d => d.status === 'new' && !d.adminSeen);
             const newApps = allAppointments.filter(a => a.status === 'pending');
-            html = `<div><h2><i class="fas fa-user-shield"></i> Админ-панель</h2><div class="card"><div class="flex-between"><h3>📄 Новые документы</h3><span class="status-badge">${newDocs.length}</span></div><div id="adminDocsList">${newDocs.map(d=>`<div class="flex-between" style="margin-bottom:10px;"><span><i class="fas fa-file-pdf"></i> ${d.fileName} (${d.userId})</span><button class="btn-outline small-mark" data-id="${d.id}">Просмотрено</button></div>`).join('') || 'Нет новых'}</div><hr><h3>📅 Новые записи</h3><div id="adminAppsList">${newApps.map(a=>`<div class="flex-between" style="margin-bottom:10px;"><span>${a.date} ${a.time} — ${a.clientName}</span><button class="btn-outline small-confirm" data-id="${a.id}">✅ Подтвердить</button></div>`).join('') || 'Нет новых'}</div><hr><h3>🔒 Блокировка слотов</h3><div style="display:flex; gap:8px; flex-wrap:wrap;"><input type="date" id="blockDate" style="flex:1;"><select id="blockTime" style="flex:1;"><option>10:00</option><option>12:00</option><option>14:00</option><option>16:00</option><option>18:00</option></select><button id="addBlockSlotBtn" class="btn">+</button></div><p><small>Заблокировано: ${blockedSlots.map(b=>`${b.date} ${b.time}`).join(', ') || 'нет'}</small></p><hr><h3>🔗 Управление новостными ссылками (ИИ источники)</h3><div id="linksList"></div><div style="display:flex; gap:8px; flex-wrap:wrap;"><input id="newLinkName" placeholder="Название источника" style="flex:1;"><input id="newLinkUrl" placeholder="URL" style="flex:2;"><button id="addLinkBtn" class="btn-outline">Добавить</button></div></div></div>`;
-        } else if(activeTab === 'admin' && !isAdmin) html = `<div class="card"><i class="fas fa-ban"></i> Доступ только администраторам</div>`;
+            html = `<h2><i class="fas fa-user-shield"></i> Админ-панель</h2><div class="card">
+                <div class="flex-between"><h3>Новые документы</h3><span class="status-badge">${newDocs.length}</span></div>
+                <div id="adminDocsList">${newDocs.map(d=>`<div class="flex-between"><span>📄 ${d.fileName} (${d.userId})</span><button class="btn-outline small-mark" data-id="${d.id}">Просмотрено</button></div>`).join('') || 'Нет'}</div>
+                <hr><h3>Новые записи</h3>
+                <div id="adminAppsList">${newApps.map(a=>`<div class="flex-between"><span>📅 ${a.date} ${a.time} — ${a.clientName}</span><button class="btn-outline small-confirm" data-id="${a.id}">Подтвердить</button></div>`).join('') || 'Нет'}</div>
+                <hr><h3>Блокировка слотов</h3>
+                <div style="display:flex; gap:8px;"><input type="date" id="blockDate" style="flex:1;"><select id="blockTime" style="flex:1;"><option>10:00</option><option>12:00</option><option>14:00</option><option>16:00</option><option>18:00</option></select><button id="addBlockSlotBtn" class="btn">+</button></div>
+                <p><small>Заблокировано: ${blockedSlots.map(b=>`${b.date} ${b.time}`).join(', ')}</small></p>
+                <hr><h3>Управление ссылками</h3><div id="linksList"></div>
+                <div style="display:flex; gap:8px;"><input id="newLinkName" placeholder="Название"><input id="newLinkUrl" placeholder="URL"><button id="addLinkBtn" class="btn-outline">Добавить</button></div>
+            </div>`;
+        }
+        else if(activeTab === 'admin' && !isAdmin) html = `<div class="card"><i class="fas fa-ban"></i> Доступ только администраторам</div>`;
+        
         container.innerHTML = html;
         if(activeTab === 'calendar') { renderCalendarUI(); }
         if(activeTab === 'documents') renderUserDocs();
@@ -323,68 +331,167 @@
         const month = today.getMonth();
         const daysInMonth = new Date(year, month+1, 0).getDate();
         let calHtml = `<div class="cal-grid">${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div style="font-weight:bold;">${d}</div>`).join('')}`;
-        const firstDayOfMonth = new Date(year, month, 1);
-        let startOffset = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
+        let startOffset = new Date(year, month, 1).getDay() - 1;
+        if(startOffset < 0) startOffset = 6;
         for(let i=0; i<startOffset; i++) calHtml += `<div></div>`;
-        for(let d=1; d<=daysInMonth; d++) { const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; calHtml += `<div class="cal-day" data-date="${dateStr}">${d}</div>`; }
+        for(let d=1; d<=daysInMonth; d++) { const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; calHtml += `<div class="cal-day" data-date="${ds}">${d}</div>`; }
         calHtml += `</div>`;
         document.getElementById('simpleCalendar').innerHTML = calHtml;
         let selectedDate = null;
-        document.querySelectorAll('.cal-day').forEach(el => { el.addEventListener('click', () => { document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); selectedDate = el.dataset.date; renderTimeSlots(selectedDate); }); });
+        document.querySelectorAll('.cal-day').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+                el.classList.add('selected');
+                selectedDate = el.dataset.date;
+                renderTimeSlots(selectedDate);
+            };
+        });
         window.renderTimeSlots = (date) => {
             const slots = ['10:00', '12:00', '14:00', '16:00', '18:00'];
             const timesDiv = document.getElementById('timeSlotsArea');
-            timesDiv.innerHTML = `<div class="time-slots">${slots.map(t => { const isBlocked = blockedSlots.some(b => b.date === date && b.time === t); const isBooked = allAppointments.some(a => a.date === date && a.time === t && a.userId === currentUser?.login); const disabled = isBlocked || isBooked; return `<div class="slot ${disabled ? 'booked' : 'free'}" data-time="${t}" data-date="${date}">${t} ${disabled ? '🔒 занято' : '✅ свободно'}</div>`; }).join('')}</div>`;
-            document.querySelectorAll('.slot.free').forEach(slot => slot.addEventListener('click', (e) => { document.querySelectorAll('.slot').forEach(s=>s.style.border='none'); slot.style.border = '2px solid #FAC643'; window.selectedSlot = { date: slot.dataset.date, time: slot.dataset.time }; }));
+            timesDiv.innerHTML = `<div class="time-slots">${slots.map(t => {
+                const blocked = blockedSlots.some(b => b.date === date && b.time === t);
+                const booked = allAppointments.some(a => a.date === date && a.time === t && a.userId === currentUser?.login);
+                const disabled = blocked || booked;
+                return `<div class="slot ${disabled ? 'booked' : 'free'}" data-time="${t}" data-date="${date}">${t} ${disabled ? '🔒' : '✅'}</div>`;
+            }).join('')}</div>`;
+            document.querySelectorAll('.slot.free').forEach(slot => {
+                slot.onclick = () => {
+                    document.querySelectorAll('.slot').forEach(s=>s.style.border='');
+                    slot.style.border = '2px solid #FAC643';
+                    window.selectedSlot = { date: slot.dataset.date, time: slot.dataset.time };
+                };
+            });
         };
-        if(document.querySelector('.cal-day.selected')) selectedDate = document.querySelector('.cal-day.selected').dataset.date;
-        if(selectedDate) renderTimeSlots(selectedDate);
+        if(document.querySelector('.cal-day.selected')) renderTimeSlots(document.querySelector('.cal-day.selected').dataset.date);
     }
-    function renderUserDocs() { const container = document.getElementById('userDocsList'); if(container) container.innerHTML = allDocuments.filter(d=>d.userId===currentUser.login).map(d=>`<div class="file-upload"><i class="fas fa-file"></i> ${d.fileName} (${d.uploadDate})</div>`).join('') || '<p>Нет документов</p>'; }
-    function renderAdminLinks() { const div = document.getElementById('linksList'); if(div) div.innerHTML = newsLinks.map((l,i)=>`<div class="flex-between" style="margin-bottom:8px;"><span>🔗 <a href="${l.url}" target="_blank" style="color:#FAC643;">${l.name}</a></span><button class="btn-outline del-link" data-idx="${i}" style="padding:6px 12px;">Удалить</button></div>`).join(''); document.querySelectorAll('.del-link').forEach(btn=>{ btn.addEventListener('click',()=>{ newsLinks.splice(parseInt(btn.dataset.idx),1); persistData(); renderAdminLinks(); showToast("Ссылка удалена"); }); }); }
+    
+    function renderUserDocs() {
+        const container = document.getElementById('userDocsList');
+        if(container) container.innerHTML = allDocuments.filter(d=>d.userId===currentUser.login).map(d=>`<div class="file-upload"><i class="fas fa-file"></i> ${d.fileName} (${d.uploadDate})</div>`).join('') || '<p>Нет документов</p>';
+    }
+    
+    function renderAdminLinks() {
+        const div = document.getElementById('linksList');
+        if(div) div.innerHTML = newsLinks.map((l,i)=>`<div class="flex-between"><span>🔗 <a href="${l.url}" target="_blank">${l.name}</a></span><button class="btn-outline del-link" data-idx="${i}">Удалить</button></div>`).join('');
+        document.querySelectorAll('.del-link').forEach(btn => {
+            btn.onclick = () => { newsLinks.splice(parseInt(btn.dataset.idx),1); persistData(); renderAdminLinks(); showToast("Ссылка удалена"); };
+        });
+    }
+    
     function attachAdminEvents() {
-        document.getElementById('addBlockSlotBtn')?.addEventListener('click',()=>{ const date=document.getElementById('blockDate').value, time=document.getElementById('blockTime').value; if(date&&time&&!blockedSlots.some(b=>b.date===date&&b.time===time)){ blockedSlots.push({date,time}); persistData(); showToast(`Слот ${date} ${time} заблокирован`); renderDashboard(); } else showToast("Неверные данные или уже заблокирован",true); });
-        document.getElementById('addLinkBtn')?.addEventListener('click',()=>{ const name=document.getElementById('newLinkName').value, url=document.getElementById('newLinkUrl').value; if(name&&url){ newsLinks.push({name,url}); persistData(); renderAdminLinks(); showToast("Источник добавлен"); } else showToast("Заполните оба поля",true); });
-        document.querySelectorAll('.small-mark').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const docId=parseInt(btn.dataset.id); const doc=allDocuments.find(d=>d.id===docId); if(doc){ doc.adminSeen=true; doc.status='seen'; persistData(); renderDashboard(); showToast("Документ отмечен как просмотренный"); } }); });
-        document.querySelectorAll('.small-confirm').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const appId=parseInt(btn.dataset.id); const app=allAppointments.find(a=>a.id===appId); if(app){ app.status='confirmed'; persistData(); renderDashboard(); showToast("Запись подтверждена"); } }); });
+        document.getElementById('addBlockSlotBtn')?.onclick = () => {
+            const date = document.getElementById('blockDate').value;
+            const time = document.getElementById('blockTime').value;
+            if(date && time && !blockedSlots.some(b=>b.date===date&&b.time===time)) {
+                blockedSlots.push({date,time});
+                persistData();
+                showToast(`Слот ${date} ${time} заблокирован`);
+                renderDashboard();
+            } else showToast("Неверные данные", true);
+        };
+        document.getElementById('addLinkBtn')?.onclick = () => {
+            const name = document.getElementById('newLinkName').value;
+            const url = document.getElementById('newLinkUrl').value;
+            if(name && url) { newsLinks.push({name,url}); persistData(); renderAdminLinks(); showToast("Источник добавлен"); }
+            else showToast("Заполните поля", true);
+        };
+        document.querySelectorAll('.small-mark').forEach(btn => {
+            btn.onclick = () => {
+                const doc = allDocuments.find(d=>d.id===parseInt(btn.dataset.id));
+                if(doc) { doc.adminSeen=true; doc.status='seen'; persistData(); renderDashboard(); showToast("Документ отмечен"); }
+            };
+        });
+        document.querySelectorAll('.small-confirm').forEach(btn => {
+            btn.onclick = () => {
+                const app = allAppointments.find(a=>a.id===parseInt(btn.dataset.id));
+                if(app) { app.status='confirmed'; persistData(); renderDashboard(); showToast("Запись подтверждена"); }
+            };
+        });
     }
+    
     function attachDynamicEvents() {
         if(activeTab === 'documents') {
-            document.getElementById('uploadDocBtn')?.addEventListener('click',()=>{ const fileInput=document.getElementById('docFileInput'), caseId=document.getElementById('docCaseSelect')?.value; if(fileInput.files.length && caseId){ const file=fileInput.files[0]; allDocuments.push({ id:Date.now(), userId:currentUser.login, caseId:parseInt(caseId), fileName:file.name, uploadDate:new Date().toISOString().slice(0,10), status:'new', adminSeen:false }); persistData(); showModal({ title:"✅ Документ загружен", message:`"${file.name}" успешно загружен. Администратор получит уведомление.`, icon:"fas fa-check-circle", confirmText:"Отлично" }); renderDashboard();} else showToast("Выберите файл и дело",true); });
+            document.getElementById('uploadDocBtn')?.onclick = () => {
+                const file = document.getElementById('docFileInput').files[0];
+                const caseId = document.getElementById('docCaseSelect')?.value;
+                if(file && caseId) {
+                    allDocuments.push({ id:Date.now(), userId:currentUser.login, caseId:parseInt(caseId), fileName:file.name, uploadDate:new Date().toISOString().slice(0,10), status:'new', adminSeen:false });
+                    persistData();
+                    showModal({ title:"Документ загружен", message:`"${file.name}" успешно загружен.`, icon:"fas fa-check-circle", confirmText:"Отлично" });
+                    renderDashboard();
+                } else showToast("Выберите файл", true);
+            };
         }
         if(activeTab === 'calendar') {
-            document.getElementById('bookSlotBtn')?.addEventListener('click',()=>{ if(window.selectedSlot && window.selectedSlot.date && window.selectedSlot.time){ const {date,time}=window.selectedSlot; const already=allAppointments.some(a=>a.date===date&&a.time===time && a.userId===currentUser.login); const blocked=blockedSlots.some(b=>b.date===date&&b.time===time); if(already) showToast("Вы уже записаны на это время",true); else if(blocked) showToast("Слот занят администратором",true); else { allAppointments.push({ id:Date.now(), userId:currentUser.login, date, time, clientName:currentUser.login, status:'pending' }); persistData(); showModal({ title:"📅 Запись создана", message:`Вы записаны на ${date} в ${time}. Ожидайте подтверждения администратора.`, icon:"fas fa-calendar-check", confirmText:"Понятно" }); renderDashboard(); } } else showToast("Выберите свободное время",true); });
-            const myApps = allAppointments.filter(a=>a.userId===currentUser.login); const listDiv=document.getElementById('myAppointmentsList'); if(listDiv) listDiv.innerHTML = myApps.map(a=>`<div class="card"><i class="fas fa-clock"></i> ${a.date} ${a.time} — статус: ${a.status==='pending'?'⏳ ожидает':'✅ подтверждён'}</div>`).join('');
+            document.getElementById('bookSlotBtn')?.onclick = () => {
+                if(window.selectedSlot) {
+                    const {date,time} = window.selectedSlot;
+                    const already = allAppointments.some(a=>a.date===date&&a.time===time && a.userId===currentUser.login);
+                    const blocked = blockedSlots.some(b=>b.date===date&&b.time===time);
+                    if(already) showToast("Вы уже записаны", true);
+                    else if(blocked) showToast("Слот занят", true);
+                    else {
+                        allAppointments.push({ id:Date.now(), userId:currentUser.login, date, time, clientName:currentUser.login, status:'pending' });
+                        persistData();
+                        showModal({ title:"Запись создана", message:`Вы записаны на ${date} в ${time}.`, icon:"fas fa-calendar-check", confirmText:"Понятно" });
+                        renderDashboard();
+                    }
+                } else showToast("Выберите время", true);
+            };
+            const myApps = allAppointments.filter(a=>a.userId===currentUser.login);
+            const listDiv = document.getElementById('myAppointmentsList');
+            if(listDiv) listDiv.innerHTML = myApps.map(a=>`<div class="card"><i class="fas fa-clock"></i> ${a.date} ${a.time} — ${a.status==='pending'?'⏳ ожидает':'✅ подтверждён'}</div>`).join('');
         }
     }
 
-    function setupNavigation() {
-        const navItems = document.querySelectorAll('.nav-item');
-        const updateTab = (tabId) => { activeTab = tabId; renderDashboard(); navItems.forEach(item=>{ if(item.dataset.tab===tabId) item.classList.add('active'); else item.classList.remove('active'); }); history.pushState({tab:tabId},'',`#${tabId}`); };
-        navItems.forEach(item=>item.addEventListener('click',()=>updateTab(item.dataset.tab)));
-        window.addEventListener('popstate',(e)=>{ const tab=e.state?.tab||'cases'; activeTab=tab; renderDashboard(); navItems.forEach(item=>{ if(item.dataset.tab===tab) item.classList.add('active'); else item.classList.remove('active'); }); });
-        let touchStartX=0; document.getElementById('appDashboard')?.addEventListener('touchstart',(e)=>{ touchStartX=e.changedTouches[0].screenX; });
-        document.getElementById('appDashboard')?.addEventListener('touchend',(e)=>{ const diff=e.changedTouches[0].screenX - touchStartX; const order=['cases','calendar','documents']; if(currentUser?.role==='admin') order.push('admin'); const idx=order.indexOf(activeTab); if(diff>50 && idx>0) updateTab(order[idx-1]); if(diff<-50 && idx<order.length-1) updateTab(order[idx+1]); });
-    }
     function buildBottomNav() {
         const navDiv = document.getElementById('bottomNav');
         const isAdmin = currentUser?.role === 'admin';
         const tabs = [{id:'cases',icon:'fas fa-gavel',label:'Дела'},{id:'calendar',icon:'fas fa-calendar-alt',label:'Календарь'},{id:'documents',icon:'fas fa-file-alt',label:'Документы'}];
         if(isAdmin) tabs.push({id:'admin',icon:'fas fa-user-shield',label:'Админ'});
-        navDiv.innerHTML = tabs.map(tab=>`<div class="nav-item ${activeTab===tab.id?'active':''}" data-tab="${tab.id}"><i class="${tab.icon}"></i><span>${tab.label}</span></div>`).join('');
-        setupNavigation();
+        navDiv.innerHTML = tabs.map(tab => `<div class="nav-item ${activeTab===tab.id?'active':''}" data-tab="${tab.id}"><i class="${tab.icon}"></i><span>${tab.label}</span></div>`).join('');
+        
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.onclick = () => {
+                activeTab = item.dataset.tab;
+                renderDashboard();
+                document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+                item.classList.add('active');
+                history.pushState({tab:activeTab}, '', `#${activeTab}`);
+            };
+        });
+        
+        window.onpopstate = (e) => {
+            activeTab = e.state?.tab || 'cases';
+            renderDashboard();
+            document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+            document.querySelector(`.nav-item[data-tab="${activeTab}"]`)?.classList.add('active');
+        };
+        
+        // Свайпы
+        let touchStart = 0;
+        document.getElementById('appDashboard').ontouchstart = (e) => { touchStart = e.changedTouches[0].screenX; };
+        document.getElementById('appDashboard').ontouchend = (e) => {
+            const diff = e.changedTouches[0].screenX - touchStart;
+            const order = isAdmin ? ['cases','calendar','documents','admin'] : ['cases','calendar','documents'];
+            const idx = order.indexOf(activeTab);
+            if(diff > 50 && idx > 0) activeTab = order[idx-1];
+            if(diff < -50 && idx < order.length-1) activeTab = order[idx+1];
+            renderDashboard();
+            document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+            document.querySelector(`.nav-item[data-tab="${activeTab}"]`)?.classList.add('active');
+            history.pushState({tab:activeTab}, '', `#${activeTab}`);
+        };
     }
 
     async function handleLogin() {
         const login = document.getElementById('loginUsername').value.trim();
         const pass = document.getElementById('loginPassword').value.trim();
-        const consentChecked = document.getElementById('consentCheckbox').checked;
-        
-        if(!consentChecked) {
-            showModal({ title: "Требуется согласие", message: "Для входа в личный кабинет необходимо ознакомиться и принять условия обработки персональных данных, политику конфиденциальности и пользовательское соглашение.", icon: "fas fa-shield-alt", confirmText: "Понятно" });
+        if(!document.getElementById('consentCheckbox').checked) {
+            showModal({ title: "Требуется согласие", message: "Необходимо принять условия обработки ПД.", confirmText: "Понятно" });
             return;
         }
-        
         if((login === 'user' && pass === 'user') || (login === 'admin' && pass === 'admin')) {
             currentUser = { login, role: login === 'admin' ? 'admin' : 'user', id: login };
             persistData();
@@ -393,19 +500,28 @@
             activeTab = 'cases';
             buildBottomNav();
             renderDashboard();
-            showToast(`Добро пожаловать, ${login === 'admin' ? 'Администратор' : 'Клиент'}!`);
-        } else { showModal({ title:"Ошибка входа", message:"Неверный логин или пароль.\n\nДоступные учётные данные:\nКлиент: user / user\nАдмин: admin / admin", icon:"fas fa-lock", confirmText:"Попробовать снова" }); }
+            showToast(`Добро пожаловать!`);
+        } else {
+            showModal({ title:"Ошибка входа", message:"Неверный логин или пароль.\nКлиент: user/user\nАдмин: admin/admin", confirmText:"OK" });
+        }
     }
 
-    async function init() {
-        initMockData(); loadPersistedData(); renderNewsOnLogin();
-        setupConsentCheckbox();
+    function init() {
+        initMockData();
+        loadPersistedData();
+        renderNewsOnLogin();
+        setupConsent();
         document.getElementById('doLoginBtn').onclick = handleLogin;
-        if(currentUser) { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appDashboard').classList.remove('hidden'); buildBottomNav(); renderDashboard(); }
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+        if(currentUser) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appDashboard').classList.remove('hidden');
+            buildBottomNav();
+            renderDashboard();
+        }
     }
     init();
-    // PWA Service Worker
-    if('serviceWorker' in navigator) { navigator.serviceWorker.register('https://spoiler038.github.io/sovet-yurista/sw.js').catch(e=>console.log); }
+    if('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(e=>console.log); }
 </script>
 </body>
 </html>
