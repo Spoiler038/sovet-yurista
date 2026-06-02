@@ -1,26 +1,26 @@
 {
-  "name": "Совет Юриста — Юридическая защита",
-  "short_name": "Совет Юриста",
-  "description": "Юридические новости, личный кабинет, запись на приём",
-  "start_url": "/",
+  "name": "ООО ЮК Совет Юриста",
+  "short_name": "СоветЮриста",
+  "description": "Юридическая защита бизнеса и граждан",
+  "start_url": "/sovet-yurista/",
   "display": "standalone",
   "theme_color": "#1C1D21",
   "background_color": "#1C1D21",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/sovet-yurista/",
   "icons": [
     {
-      "src": "icons/icon-96.png",
+      "src": "https://spoiler038.github.io/sovet-yurista/icons/icon-96.png",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-192.png",
+      "src": "https://spoiler038.github.io/sovet-yurista/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "https://spoiler038.github.io/sovet-yurista/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
