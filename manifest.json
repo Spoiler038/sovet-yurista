@@ -2,7 +2,7 @@
   "name": "ООО ЮК Совет Юриста",
   "short_name": "СоветЮриста",
   "description": "Юридическая защита бизнеса и граждан",
-  "start_url": "/sovet-yurista/",
+  "start_url": "/sovet-yurista/index.html",
   "display": "standalone",
   "theme_color": "#1C1D21",
   "background_color": "#1C1D21",
@@ -10,17 +10,17 @@
   "scope": "/sovet-yurista/",
   "icons": [
     {
-      "src": "https://spoiler038.github.io/sovet-yurista/icons/icon-96.png",
+      "src": "/sovet-yurista/icons/icon-96.png",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "https://spoiler038.github.io/sovet-yurista/icons/icon-192.png",
+      "src": "/sovet-yurista/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://spoiler038.github.io/sovet-yurista/icons/icon-512.png",
+      "src": "/sovet-yurista/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
