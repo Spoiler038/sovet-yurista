@@ -1,8 +1,8 @@
-const CACHE_NAME = 'legal-pwa-v1';
+const CACHE_NAME = 'sovet-yurista-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  '/sovet-yurista/',
+  '/sovet-yurista/index.html',
+  '/sovet-yurista/manifest.json'
 ];
 
 self.addEventListener('install', event => {
