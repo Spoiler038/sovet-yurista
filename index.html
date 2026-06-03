@@ -608,34 +608,35 @@
             };
         });
 
-        document.getElementById('saveWorkHoursBtn')?.addEventListener('click', function() {
-            workHours.start = document.getElementById('workStart').value;
-            workHours.end = document.getElementById('workEnd').value;
-            saveToServer();
-            showToast("Часы работы сохранены");
-            renderDashboard();
-        });
-        
         document.getElementById('saveRssUrlBtn')?.addEventListener('click', function() {
-    var newUrl = document.getElementById('rssUrlInput').value.trim();
-    if(newUrl) {
-        callGas('saveRssUrl', { url: newUrl, deviceId: localStorage.getItem('deviceId') }, (res) => {
+        var newUrl = document.getElementById('rssUrlInput').value.trim();
+        if(newUrl) {
+            callGas('saveRssUrl', { url: newUrl, deviceId: localStorage.getItem('deviceId') }, (res) => {
+                if(res && res.success) {
+                    currentRssUrl = newUrl;
+                    document.getElementById('rssUrlInput').value = newUrl;
+                    showToast("RSS URL сохранён");
+                } else {
+                    showToast("Ошибка сохранения", true);
+                }
+            });
+        } else {
+            showToast("Введите URL", true);
+        }
+    });
+    
+    // 👇 ВОТ СЮДА ДОБАВЬТЕ ЭТОТ КОД 👇
+    document.getElementById('clearRssUrlBtn')?.addEventListener('click', function() {
+        document.getElementById('rssUrlInput').value = '';
+        callGas('saveRssUrl', { url: '', deviceId: localStorage.getItem('deviceId') }, (res) => {
             if(res && res.success) {
-                currentRssUrl = newUrl;
-                // Обновляем только поле ввода, НЕ перерисовываем весь дашборд
-                document.getElementById('rssUrlInput').value = newUrl;
-                showToast("RSS URL сохранён");
-                // Не вызываем renderDashboard() и не перезагружаем всё
+                currentRssUrl = '';
+                showToast("RSS URL очищен");
             } else {
-                showToast("Ошибка сохранения: " + (res.error || "неизвестно"), true);
-                // Восстанавливаем старое значение
-                document.getElementById('rssUrlInput').value = currentRssUrl;
+                showToast("Ошибка очистки", true);
             }
         });
-    } else {
-        showToast("Введите URL", true);
-    }
-});
+    });
         
         document.getElementById('refreshNewsBtn')?.addEventListener('click', function() {
             callGas('refreshNews', { deviceId: localStorage.getItem('deviceId') }, (res) => {
@@ -924,24 +925,25 @@
                 </div>
             </div>
             <div class="card">
-                <h3>Источник новостей (RSS)</h3>
-                <div class="flex-row">
-                    <input type="text" id="rssUrlInput" style="flex:1;" placeholder="RSS URL" value="${escapeHtml(currentRssUrl)}">
-                    <button id="saveRssUrlBtn" class="btn-outline btn-small">Сохранить</button>
-                </div>
-                <div style="margin-top:10px;">
-                    <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости сейчас</button>
-                </div>
-            </div>
-            <div class="card">
-                <h3>Управление ссылками на новости</h3>
-                <div id="linksList"></div>
-                <div class="flex-col">
-                    <input id="newLinkName" placeholder="Название">
-                    <input id="newLinkUrl" placeholder="URL">
-                    <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
-                </div>
-            </div>`;
+                 <h3>Источник новостей (RSS)</h3>
+        <div class="flex-row">
+            <input type="text" id="rssUrlInput" style="flex:1; padding-right: 30px;" placeholder="RSS URL" value="${escapeHtml(currentRssUrl)}">
+            <button id="clearRssUrlBtn" class="btn-outline btn-small" title="Очистить">✖</button>
+            <button id="saveRssUrlBtn" class="btn-outline btn-small">Сохранить</button>
+        </div>
+        <div style="margin-top:10px;">
+            <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости сейчас</button>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Управление ссылками на новости</h3>
+        <div id="linksList"></div>
+        <div class="flex-col">
+            <input id="newLinkName" placeholder="Название">
+            <input id="newLinkUrl" placeholder="URL">
+            <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
+        </div>
+    </div>`;
         }
         container.innerHTML = html;
         if (activeTab === 'calendar') renderCalendarUI();
