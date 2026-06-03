@@ -119,7 +119,22 @@
         .case-item { background: #25262B; border-radius: 24px; padding: 18px; margin-bottom: 14px; cursor: pointer; transition: 0.1s; }
         .status-badge { background: #FAC64320; color: #FAC643; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; display: inline-block; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .flex-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .flex-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            flex-wrap: nowrap;   /* запрещаем перенос на следующую строку */
+            gap: 8px;
+                }
+        .flex-row input,
+        .flex-row button,
+        .flex-row span {
+          flex: 0 0 auto;      /* элементы не сжимаются */
+        }
+        .flex-row input[type="time"],
+        .flex-row input[type="text"] {
+            flex: 1;             /* поля ввода занимают доступное пространство */
+        }
         .tabs { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #3D3E45; }
         .tab { padding: 8px 16px; cursor: pointer; color: #aaa; font-weight: 500; border-bottom: 2px solid transparent; }
         .tab.active { color: #FAC643; border-bottom-color: #FAC643; }
@@ -646,7 +661,7 @@
         }
         function showPlanningPanel(date) {
             var panel = document.getElementById('timeSlotsArea');
-            panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList"></div></div>';
+           panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList"></div></div>';
             renderBlockedPeriods(date);
             document.getElementById('addBlockPeriodBtn').onclick = function() {
                 var start = document.getElementById('blockStart').value;
@@ -826,10 +841,26 @@
                 html = `<h2>Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">${caseOptions}</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn btn-small">Загрузить</button></div><h3>Мои документы</h3><div id="userDocsList"></div>`;
             }
         } else if (activeTab === 'admin' && isAdmin) {
-            html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
-                <div class="card"><h3>Часы работы</h3><div class="flex-row"><input type="time" id="workStart" value="${workHours.start}"><span>—</span><input type="time" id="workEnd" value="${workHours.end}"><button id="saveWorkHoursBtn" class="btn-outline btn-small">Сохранить</button></div></div>
-                <div class="card"><h3>Источник новостей (RSS)</h3><div class="flex-row"><input type="text" id="rssUrlInput" style="flex:1;" placeholder="RSS URL" value="${escapeHtml(currentRssUrl)}"><button id="saveRssUrlBtn" class="btn-outline btn-small">Сохранить</button></div>
-                <div style="margin-top:10px;"><button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости сейчас</button></div></div>
+           html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
+  <div class="card">
+    <h3>Часы работы</h3>
+    <div class="flex-row">
+      <input type="time" id="workStart" value="${workHours.start}">
+      <span>—</span>
+      <input type="time" id="workEnd" value="${workHours.end}">
+      <button id="saveWorkHoursBtn" class="btn-outline btn-small">Сохранить</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Источник новостей (RSS)</h3>
+    <div class="flex-row">
+      <input type="text" id="rssUrlInput" style="flex:1;" placeholder="RSS URL" value="${escapeHtml(currentRssUrl)}">
+      <button id="saveRssUrlBtn" class="btn-outline btn-small">Сохранить</button>
+    </div>
+    <div style="margin-top:10px;">
+      <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости сейчас</button>
+    </div>
+  </div>`;
                 <div class="card"><h3>Управление ссылками на новости</h3><div id="linksList"></div><div class="flex-row"><input id="newLinkName" placeholder="Название"><input id="newLinkUrl" placeholder="URL"><button id="addLinkBtn" class="btn-outline btn-small">Добавить</button></div></div>`;
         }
         container.innerHTML = html;
