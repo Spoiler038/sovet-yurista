@@ -621,12 +621,15 @@
     if(newUrl) {
         callGas('saveRssUrl', { url: newUrl, deviceId: localStorage.getItem('deviceId') }, (res) => {
             if(res && res.success) {
-                currentRssUrl = res.url || newUrl;
-                document.getElementById('rssUrlInput').value = currentRssUrl;
+                currentRssUrl = newUrl;
+                // Обновляем только поле ввода, НЕ перерисовываем весь дашборд
+                document.getElementById('rssUrlInput').value = newUrl;
                 showToast("RSS URL сохранён");
-                syncDataFromServer(); // перезагружаем настройки
+                // Не вызываем renderDashboard() и не перезагружаем всё
             } else {
-                showToast("Ошибка сохранения", true);
+                showToast("Ошибка сохранения: " + (res.error || "неизвестно"), true);
+                // Восстанавливаем старое значение
+                document.getElementById('rssUrlInput').value = currentRssUrl;
             }
         });
     } else {
