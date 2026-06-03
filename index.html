@@ -307,25 +307,28 @@
         document.body.appendChild(script);
     }
     function syncDataFromServer() {
-        return new Promise((resolve) => {
-            callGas('getAllData', { deviceId: localStorage.getItem('deviceId') || '' }, (data) => {
-                if (data && data.success) {
-                    allCases = data.cases || [];
-                    allDocuments = data.documents || [];
-                    allAppointments = data.appointments || [];
-                    blockedSlots = data.blockedSlots || [];
-                    newsArticles = data.newsArticles || [];
-                    newsLinks = data.newsLinks || [];
-                    workHours = data.workHours || { start: "10:00", end: "18:00" };
-                    currentRssUrl = data.rss_feed_url || '';
-                    for(let a of newsArticles) a.dateShort = a.date?.slice(5).replace('-', '.') + '.' + a.date?.slice(2,4);
-                } else {
-                    console.warn('syncDataFromServer error', data);
-                }
+    return new Promise((resolve) => {
+        callGas('getAllData', { deviceId: localStorage.getItem('deviceId') || '' }, (data) => {
+            if (data && data.success) {
+                // ... обновление данных
                 resolve();
-            });
+            } else if (data && data.error === 'Unauthorized') {
+                // Очищаем невалидный deviceId
+                localStorage.removeItem('deviceId');
+                localStorage.removeItem('currentUser');
+                // Показываем экран входа
+                document.getElementById('appDashboard').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                showToast("Сессия истекла, войдите заново");
+                resolve();
+            } else {
+                console.warn('syncDataFromServer error', data);
+                resolve();
+            }
         });
-    }
+    });
+}
+    
     function saveToServer() {
         var payload = {
             cases: JSON.stringify(allCases),
@@ -340,10 +343,14 @@
         callGas('saveAllData', payload, (res) => { console.log('Saved', res); });
     }
     function persistCurrentUser() {
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        if(currentUser) localStorage.setItem('deviceId', currentUser.deviceId || '');
-        else localStorage.removeItem('deviceId');
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    if(currentUser && currentUser.deviceId) {
+        localStorage.setItem('deviceId', currentUser.deviceId);
+    } else {
+        localStorage.removeItem('deviceId');
     }
+}
+    
     function autoLogin() {
         var deviceId = localStorage.getItem('deviceId');
         if(!deviceId) return;
@@ -660,20 +667,52 @@
             }
         }
         function showPlanningPanel(date) {
-            var panel = document.getElementById('timeSlotsArea');
-           panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList"></div></div>';
+    var panel = document.getElementById('timeSlotsArea');
+    panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList"></div></div>';
+    
+    // Предотвращаем всплытие кликов для полей ввода и кнопки
+    var blockStart = document.getElementById('blockStart');
+    var blockEnd = document.getElementById('blockEnd');
+    var addButton = document.getElementById('addBlockPeriodBtn');
+    
+    if (blockStart) {
+        blockStart.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        blockStart.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    if (blockEnd) {
+        blockEnd.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        blockEnd.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    if (addButton) {
+        addButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    renderBlockedPeriods(date);
+    
+    document.getElementById('addBlockPeriodBtn').onclick = function(e) {
+        e.stopPropagation();
+        var start = document.getElementById('blockStart').value;
+        var end = document.getElementById('blockEnd').value;
+        if(start && end) {
+            blockedSlots.push({ date: date, timeStart: start, timeEnd: end });
+            saveToServer();
             renderBlockedPeriods(date);
-            document.getElementById('addBlockPeriodBtn').onclick = function() {
-                var start = document.getElementById('blockStart').value;
-                var end = document.getElementById('blockEnd').value;
-                if(start && end) {
-                    blockedSlots.push({ date: date, timeStart: start, timeEnd: end });
-                    saveToServer();
-                    renderBlockedPeriods(date);
-                    showToast("Период заблокирован");
-                } else showToast("Выберите время", true);
-            };
-        }
+            showToast("Период заблокирован");
+        } else showToast("Выберите время", true);
+    };
+}
         function renderBlockedPeriods(date) {
             var periods = blockedSlots.filter(b => b.date === date);
             var listDiv = document.getElementById('blockedPeriodsList');
@@ -708,18 +747,22 @@
             }
         }
         document.querySelectorAll('.cal-day').forEach(el => {
-            el.onclick = function() {
-                document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedDate = this.dataset.date;
-                if(currentUser.role === 'admin') {
-                    if(planningMode) showPlanningPanel(selectedDate);
-                    else showAppointmentsForDate(selectedDate);
-                } else {
-                    renderTimeSlots(selectedDate);
-                }
-            };
-        });
+    el.onclick = function(e) {
+        // Если клик был внутри панели планирования (поля ввода, кнопки) – игнорируем
+        if (e.target.closest('#timeSlotsArea') && planningMode) {
+            return;
+        }
+        document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedDate = this.dataset.date;
+        if(currentUser.role === 'admin') {
+            if(planningMode) showPlanningPanel(selectedDate);
+            else showAppointmentsForDate(selectedDate);
+        } else {
+            renderTimeSlots(selectedDate);
+        }
+    };
+});
         document.getElementById('planningToggleBtn')?.addEventListener('click', function() {
             planningMode = !planningMode;
             this.innerHTML = planningMode ? '<i class="fas fa-calendar-day"></i> Обычный режим' : '<i class="fas fa-calendar-plus"></i> Планирование';
