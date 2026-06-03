@@ -617,22 +617,22 @@
         });
         
         document.getElementById('saveRssUrlBtn')?.addEventListener('click', function() {
-            var newUrl = document.getElementById('rssUrlInput').value.trim();
-            if(newUrl) {
-                showToast("Сохранение RSS URL...");
-                callGas('saveRssUrl', { url: newUrl, deviceId: localStorage.getItem('deviceId') }, (res) => {
-                    if(res && res.success) {
-                        currentRssUrl = newUrl;
-                        showToast("RSS URL сохранён");
-                        document.getElementById('rssUrlInput').value = newUrl;
-                    } else {
-                        showToast("Ошибка сохранения: " + (res.error || "неизвестная"), true);
-                    }
-                });
+    var newUrl = document.getElementById('rssUrlInput').value.trim();
+    if(newUrl) {
+        callGas('saveRssUrl', { url: newUrl, deviceId: localStorage.getItem('deviceId') }, (res) => {
+            if(res && res.success) {
+                currentRssUrl = res.url || newUrl;
+                document.getElementById('rssUrlInput').value = currentRssUrl;
+                showToast("RSS URL сохранён");
+                syncDataFromServer(); // перезагружаем настройки
             } else {
-                showToast("Введите URL", true);
+                showToast("Ошибка сохранения", true);
             }
         });
+    } else {
+        showToast("Введите URL", true);
+    }
+});
         
         document.getElementById('refreshNewsBtn')?.addEventListener('click', function() {
             callGas('refreshNews', { deviceId: localStorage.getItem('deviceId') }, (res) => {
