@@ -841,7 +841,7 @@
                 html = `<h2>Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">${caseOptions}</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn btn-small">Загрузить</button></div><h3>Мои документы</h3><div id="userDocsList"></div>`;
             }
         } else if (activeTab === 'admin' && isAdmin) {
-           html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
+  html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
   <div class="card">
     <h3>Часы работы</h3>
     <div class="flex-row">
@@ -860,9 +860,17 @@
     <div style="margin-top:10px;">
       <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости сейчас</button>
     </div>
+  </div>
+  <div class="card">
+    <h3>Управление ссылками на новости</h3>
+    <div id="linksList"></div>
+    <div class="flex-row">
+      <input id="newLinkName" placeholder="Название">
+      <input id="newLinkUrl" placeholder="URL">
+      <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
+    </div>
   </div>`;
-                <div class="card"><h3>Управление ссылками на новости</h3><div id="linksList"></div><div class="flex-row"><input id="newLinkName" placeholder="Название"><input id="newLinkUrl" placeholder="URL"><button id="addLinkBtn" class="btn-outline btn-small">Добавить</button></div></div>`;
-        }
+}
         container.innerHTML = html;
         if (activeTab === 'calendar') renderCalendarUI();
         if (activeTab === 'documents') renderUserDocs();
