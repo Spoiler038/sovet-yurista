@@ -379,8 +379,9 @@
         document.body.appendChild(script);
     }
     function syncDataFromServer() {
-        return new Promise((resolve) => {
+    return new Promise((resolve) => {
             callGas('getAllData', { deviceId: localStorage.getItem('deviceId') || '' }, (data) => {
+                console.log('getAllData ответ:', data);
                 if (data && data.success) {
                     console.log('Получено новостей:', data.newsArticles?.length);
                     allCases = data.cases || [];
