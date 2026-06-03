@@ -123,17 +123,22 @@
             display: flex;
             flex-direction: row;
             align-items: center;
-            flex-wrap: nowrap;   /* запрещаем перенос на следующую строку */
+            flex-wrap: nowrap;
             gap: 8px;
-                }
+        }
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
         .flex-row input,
         .flex-row button,
         .flex-row span {
-          flex: 0 0 auto;      /* элементы не сжимаются */
+            flex: 0 0 auto;
         }
         .flex-row input[type="time"],
         .flex-row input[type="text"] {
-            flex: 1;             /* поля ввода занимают доступное пространство */
+            flex: 1;
         }
         .tabs { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #3D3E45; }
         .tab { padding: 8px 16px; cursor: pointer; color: #aaa; font-weight: 500; border-bottom: 2px solid transparent; }
@@ -251,6 +256,18 @@
             return m;
         });
     }
+    
+    function normalizePhone(phone) {
+        if (!phone) return '';
+        let digits = phone.replace(/\D/g, '');
+        if (digits.length === 11 && digits[0] === '8') {
+            digits = '7' + digits.slice(1);
+        } else if (digits.length === 10 && digits[0] !== '7') {
+            digits = '7' + digits;
+        }
+        return digits;
+    }
+    
     function showToast(msg, isErr) {
         var toast = document.createElement('div');
         toast.className = 'toast-msg';
@@ -307,27 +324,33 @@
         document.body.appendChild(script);
     }
     function syncDataFromServer() {
-    return new Promise((resolve) => {
-        callGas('getAllData', { deviceId: localStorage.getItem('deviceId') || '' }, (data) => {
-            if (data && data.success) {
-                // ... обновление данных
-                resolve();
-            } else if (data && data.error === 'Unauthorized') {
-                // Очищаем невалидный deviceId
-                localStorage.removeItem('deviceId');
-                localStorage.removeItem('currentUser');
-                // Показываем экран входа
-                document.getElementById('appDashboard').classList.add('hidden');
-                document.getElementById('loginScreen').classList.remove('hidden');
-                showToast("Сессия истекла, войдите заново");
-                resolve();
-            } else {
-                console.warn('syncDataFromServer error', data);
-                resolve();
-            }
+        return new Promise((resolve) => {
+            callGas('getAllData', { deviceId: localStorage.getItem('deviceId') || '' }, (data) => {
+                if (data && data.success) {
+                    allCases = data.cases || [];
+                    allDocuments = data.documents || [];
+                    allAppointments = data.appointments || [];
+                    blockedSlots = data.blockedSlots || [];
+                    newsArticles = data.newsArticles || [];
+                    newsLinks = data.newsLinks || [];
+                    workHours = data.workHours || { start: "10:00", end: "18:00" };
+                    currentRssUrl = data.rss_feed_url || '';
+                    for(let a of newsArticles) a.dateShort = a.date?.slice(5).replace('-', '.') + '.' + a.date?.slice(2,4);
+                    resolve();
+                } else if (data && data.error === 'Unauthorized') {
+                    localStorage.removeItem('deviceId');
+                    localStorage.removeItem('currentUser');
+                    document.getElementById('appDashboard').classList.add('hidden');
+                    document.getElementById('loginScreen').classList.remove('hidden');
+                    showToast("Сессия истекла, войдите заново");
+                    resolve();
+                } else {
+                    console.warn('syncDataFromServer error', data);
+                    resolve();
+                }
+            });
         });
-    });
-}
+    }
     
     function saveToServer() {
         var payload = {
@@ -343,13 +366,13 @@
         callGas('saveAllData', payload, (res) => { console.log('Saved', res); });
     }
     function persistCurrentUser() {
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    if(currentUser && currentUser.deviceId) {
-        localStorage.setItem('deviceId', currentUser.deviceId);
-    } else {
-        localStorage.removeItem('deviceId');
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        if(currentUser && currentUser.deviceId) {
+            localStorage.setItem('deviceId', currentUser.deviceId);
+        } else {
+            localStorage.removeItem('deviceId');
+        }
     }
-}
     
     function autoLogin() {
         var deviceId = localStorage.getItem('deviceId');
@@ -554,12 +577,13 @@
                         overlay.className = 'modal-overlay';
                         overlay.innerHTML = `<div class="modal-container"><h3>Запись на приём</h3>
                             <input id="appointTopic" placeholder="Тема обращения">
-                            <input id="appointPhone" placeholder="Телефон">
+                            <input id="appointPhoneRaw" placeholder="Телефон">
                             <div class="modal-buttons"><button id="confirmAppointBtn" class="btn">Записаться</button><button id="cancelAppointBtn" class="btn-outline">Отмена</button></div></div>`;
                         document.body.appendChild(overlay);
                         document.getElementById('confirmAppointBtn').onclick = function() {
                             var topic = document.getElementById('appointTopic').value;
-                            var phone = document.getElementById('appointPhone').value;
+                            var phoneRaw = document.getElementById('appointPhoneRaw').value;
+                            var phone = normalizePhone(phoneRaw);
                             allAppointments.push({ id: Date.now(), userId: currentUser.login, date, time, clientName: currentUser.login, topic, phone, status: 'pending' });
                             saveToServer();
                             overlay.remove();
@@ -589,24 +613,40 @@
             workHours.end = document.getElementById('workEnd').value;
             saveToServer();
             showToast("Часы работы сохранены");
+            renderDashboard();
         });
+        
         document.getElementById('saveRssUrlBtn')?.addEventListener('click', function() {
-            var newUrl = document.getElementById('rssUrlInput').value;
+            var newUrl = document.getElementById('rssUrlInput').value.trim();
             if(newUrl) {
+                showToast("Сохранение RSS URL...");
                 callGas('saveRssUrl', { url: newUrl, deviceId: localStorage.getItem('deviceId') }, (res) => {
                     if(res && res.success) {
                         currentRssUrl = newUrl;
                         showToast("RSS URL сохранён");
-                    } else showToast("Ошибка сохранения", true);
+                        document.getElementById('rssUrlInput').value = newUrl;
+                    } else {
+                        showToast("Ошибка сохранения: " + (res.error || "неизвестная"), true);
+                    }
                 });
-            } else showToast("Введите URL", true);
+            } else {
+                showToast("Введите URL", true);
+            }
         });
+        
         document.getElementById('refreshNewsBtn')?.addEventListener('click', function() {
             callGas('refreshNews', { deviceId: localStorage.getItem('deviceId') }, (res) => {
                 if(res && res.success) {
                     showToast("Новости обновлены (" + (res.added || 0) + " записей)");
-                    syncDataFromServer().then(() => renderNewsOnLogin());
-                } else showToast("Ошибка обновления: " + (res.error || "неизвестно"), true);
+                    syncDataFromServer().then(() => {
+                        renderNewsOnLogin();
+                        if (activeTab === 'admin' && currentUser.role === 'admin') {
+                            renderDashboard();
+                        }
+                    });
+                } else {
+                    showToast("Ошибка обновления: " + (res.error || "неизвестно"), true);
+                }
             });
         });
     }
@@ -667,52 +707,39 @@
             }
         }
         function showPlanningPanel(date) {
-    var panel = document.getElementById('timeSlotsArea');
-    panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList"></div></div>';
-    
-    // Предотвращаем всплытие кликов для полей ввода и кнопки
-    var blockStart = document.getElementById('blockStart');
-    var blockEnd = document.getElementById('blockEnd');
-    var addButton = document.getElementById('addBlockPeriodBtn');
-    
-    if (blockStart) {
-        blockStart.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-        blockStart.addEventListener('mousedown', function(e) {
-            e.stopPropagation();
-        });
-    }
-    
-    if (blockEnd) {
-        blockEnd.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-        blockEnd.addEventListener('mousedown', function(e) {
-            e.stopPropagation();
-        });
-    }
-    
-    if (addButton) {
-        addButton.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    }
-    
-    renderBlockedPeriods(date);
-    
-    document.getElementById('addBlockPeriodBtn').onclick = function(e) {
-        e.stopPropagation();
-        var start = document.getElementById('blockStart').value;
-        var end = document.getElementById('blockEnd').value;
-        if(start && end) {
-            blockedSlots.push({ date: date, timeStart: start, timeEnd: end });
-            saveToServer();
+            var panel = document.getElementById('timeSlotsArea');
+            panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList"></div></div>';
+            
+            var blockStart = document.getElementById('blockStart');
+            var blockEnd = document.getElementById('blockEnd');
+            var addButton = document.getElementById('addBlockPeriodBtn');
+            
+            if (blockStart) {
+                blockStart.addEventListener('click', function(e) { e.stopPropagation(); });
+                blockStart.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+            }
+            if (blockEnd) {
+                blockEnd.addEventListener('click', function(e) { e.stopPropagation(); });
+                blockEnd.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+            }
+            if (addButton) {
+                addButton.addEventListener('click', function(e) { e.stopPropagation(); });
+            }
+            
             renderBlockedPeriods(date);
-            showToast("Период заблокирован");
-        } else showToast("Выберите время", true);
-    };
-}
+            
+            document.getElementById('addBlockPeriodBtn').onclick = function(e) {
+                e.stopPropagation();
+                var start = document.getElementById('blockStart').value;
+                var end = document.getElementById('blockEnd').value;
+                if(start && end) {
+                    blockedSlots.push({ date: date, timeStart: start, timeEnd: end });
+                    saveToServer();
+                    renderBlockedPeriods(date);
+                    showToast("Период заблокирован");
+                } else showToast("Выберите время", true);
+            };
+        }
         function renderBlockedPeriods(date) {
             var periods = blockedSlots.filter(b => b.date === date);
             var listDiv = document.getElementById('blockedPeriodsList');
@@ -747,22 +774,21 @@
             }
         }
         document.querySelectorAll('.cal-day').forEach(el => {
-    el.onclick = function(e) {
-        // Если клик был внутри панели планирования (поля ввода, кнопки) – игнорируем
-        if (e.target.closest('#timeSlotsArea') && planningMode) {
-            return;
-        }
-        document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
-        this.classList.add('selected');
-        selectedDate = this.dataset.date;
-        if(currentUser.role === 'admin') {
-            if(planningMode) showPlanningPanel(selectedDate);
-            else showAppointmentsForDate(selectedDate);
-        } else {
-            renderTimeSlots(selectedDate);
-        }
-    };
-});
+            el.onclick = function(e) {
+                if (e.target.closest('#timeSlotsArea') && planningMode) {
+                    return;
+                }
+                document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedDate = this.dataset.date;
+                if(currentUser.role === 'admin') {
+                    if(planningMode) showPlanningPanel(selectedDate);
+                    else showAppointmentsForDate(selectedDate);
+                } else {
+                    renderTimeSlots(selectedDate);
+                }
+            };
+        });
         document.getElementById('planningToggleBtn')?.addEventListener('click', function() {
             planningMode = !planningMode;
             this.innerHTML = planningMode ? '<i class="fas fa-calendar-day"></i> Обычный режим' : '<i class="fas fa-calendar-plus"></i> Планирование';
@@ -782,7 +808,7 @@
         }
     }
 
-    // ========== ОСНОВНОЙ РЕНДЕР ДАШБОРДА (ПОЛНЫЙ) ==========
+    // ========== ОСНОВНОЙ РЕНДЕР ДАШБОРДА ==========
     function renderDashboard() {
         if (!currentUser) return;
         document.getElementById('userAvatar').textContent = currentUser.login.charAt(0).toUpperCase();
@@ -794,6 +820,7 @@
         let html = '';
 
         if (activeTab === 'cases') {
+            // ... (код для дел без изменений)
             if (isAdmin) {
                 html = `<div class="tabs"><div class="tab ${casesSubTab === 'current' ? 'active' : ''}" data-subtab="current">Текущие дела</div><div class="tab ${casesSubTab === 'archive' ? 'active' : ''}" data-subtab="archive">Архив</div></div>`;
                 if (selectedArchiveCase && casesSubTab === 'archive') {
@@ -809,7 +836,7 @@
                     }
                     html += `</div></div>`;
                 } else {
-                    let userCases = allCases.filter(c => isAdmin ? true : c.userId === currentUser.login);
+                    let userCases = allCases.filter(c => c.userId === currentUser.login);
                     if (casesSubTab === 'current') userCases = userCases.filter(c => c.status !== "Завершено");
                     else userCases = userCases.filter(c => c.status === "Завершено");
                     if (casesSubTab === 'current') html += `<button id="addCaseBtn" class="btn btn-small" style="margin-bottom:16px;"><i class="fas fa-plus"></i> Добавить дело</button>`;
@@ -833,7 +860,6 @@
                     if (userCases.length === 0) html += '<div class="card">Нет дел в этом разделе</div>';
                 }
             } else {
-                // Клиентский вид
                 const userCases = allCases.filter(c => c.userId === currentUser.login);
                 const currentCase = userCases.find(c => c.status !== "Завершено");
                 const pastCases = userCases.filter(c => c.status === "Завершено");
@@ -884,36 +910,36 @@
                 html = `<h2>Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">${caseOptions}</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn btn-small">Загрузить</button></div><h3>Мои документы</h3><div id="userDocsList"></div>`;
             }
         } else if (activeTab === 'admin' && isAdmin) {
-  html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
-  <div class="card">
-    <h3>Часы работы</h3>
-    <div class="flex-row">
-      <input type="time" id="workStart" value="${workHours.start}">
-      <span>—</span>
-      <input type="time" id="workEnd" value="${workHours.end}">
-      <button id="saveWorkHoursBtn" class="btn-outline btn-small">Сохранить</button>
-    </div>
-  </div>
-  <div class="card">
-    <h3>Источник новостей (RSS)</h3>
-    <div class="flex-row">
-      <input type="text" id="rssUrlInput" style="flex:1;" placeholder="RSS URL" value="${escapeHtml(currentRssUrl)}">
-      <button id="saveRssUrlBtn" class="btn-outline btn-small">Сохранить</button>
-    </div>
-    <div style="margin-top:10px;">
-      <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости сейчас</button>
-    </div>
-  </div>
-  <div class="card">
-    <h3>Управление ссылками на новости</h3>
-    <div id="linksList"></div>
-    <div class="flex-row">
-      <input id="newLinkName" placeholder="Название">
-      <input id="newLinkUrl" placeholder="URL">
-      <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
-    </div>
-  </div>`;
-}
+            html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
+            <div class="card">
+                <h3>Часы работы</h3>
+                <div class="flex-row">
+                    <input type="time" id="workStart" value="${workHours.start}">
+                    <span>—</span>
+                    <input type="time" id="workEnd" value="${workHours.end}">
+                    <button id="saveWorkHoursBtn" class="btn-outline btn-small">Сохранить</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Источник новостей (RSS)</h3>
+                <div class="flex-row">
+                    <input type="text" id="rssUrlInput" style="flex:1;" placeholder="RSS URL" value="${escapeHtml(currentRssUrl)}">
+                    <button id="saveRssUrlBtn" class="btn-outline btn-small">Сохранить</button>
+                </div>
+                <div style="margin-top:10px;">
+                    <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости сейчас</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Управление ссылками на новости</h3>
+                <div id="linksList"></div>
+                <div class="flex-col">
+                    <input id="newLinkName" placeholder="Название">
+                    <input id="newLinkUrl" placeholder="URL">
+                    <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
+                </div>
+            </div>`;
+        }
         container.innerHTML = html;
         if (activeTab === 'calendar') renderCalendarUI();
         if (activeTab === 'documents') renderUserDocs();
@@ -994,14 +1020,15 @@
             <input type="text" id="regLogin" placeholder="Логин">
             <input type="password" id="regPassword" placeholder="Пароль">
             <input type="text" id="regFullName" placeholder="ФИО">
-            <input type="tel" id="regPhone" placeholder="Телефон">
+            <input type="tel" id="regPhoneRaw" placeholder="Телефон">
             <div class="modal-buttons"><button id="regSubmitBtn" class="btn">Зарегистрироваться</button><button id="regCancelBtn" class="btn-outline">Отмена</button></div></div>`;
         document.body.appendChild(overlay);
         document.getElementById('regSubmitBtn').onclick = function() {
             var login = document.getElementById('regLogin').value.trim();
             var password = document.getElementById('regPassword').value.trim();
             var fullName = document.getElementById('regFullName').value.trim();
-            var phone = document.getElementById('regPhone').value.trim();
+            var phoneRaw = document.getElementById('regPhoneRaw').value.trim();
+            var phone = normalizePhone(phoneRaw);
             if (!login || !password) {
                 showToast("Заполните логин и пароль", true);
                 return;
