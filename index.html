@@ -382,11 +382,13 @@
         return new Promise((resolve) => {
             callGas('getAllData', { deviceId: localStorage.getItem('deviceId') || '' }, (data) => {
                 if (data && data.success) {
+                    console.log('Получено новостей:', data.newsArticles?.length);
                     allCases = data.cases || [];
                     allDocuments = data.documents || [];
                     allAppointments = data.appointments || [];
                     blockedSlots = data.blockedSlots || [];
                     newsArticles = data.newsArticles || [];
+                    console.log('Новости:', newsArticles);
                     newsLinks = data.newsLinks || [];
                     workHours = data.workHours || { start: "10:00", end: "18:00" };
                     currentRssUrl = data.rss_feed_url || '';
