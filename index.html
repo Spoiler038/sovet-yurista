@@ -164,8 +164,8 @@
             <h2 class="company-name" style="text-align:center;">ООО ЮК "СОВЕТ ЮРИСТА"</h2>
             <div class="news-container" id="newsFeed"></div>
             <h3>Вход в личный кабинет</h3>
-            <input type="text" id="loginUsername" placeholder="Логин (user / admin)">
-            <input type="password" id="loginPassword" placeholder="Пароль (user / admin)">
+            <input type="text" id="loginUsername" placeholder="Логин">
+            <input type="password" id="loginPassword" placeholder="Пароль">
             <div class="consent-checkbox">
                 <input type="checkbox" id="consentCheckbox">
                 <label for="consentCheckbox">
@@ -176,6 +176,9 @@
                 </label>
             </div>
             <button id="doLoginBtn" class="btn" style="width:100%" disabled><i class="fas fa-arrow-right-to-bracket"></i> Войти</button>
+            <div style="margin-top: 12px; text-align: center;">
+                <span class="consent-link" id="showRegisterBtn">Зарегистрироваться</span>
+            </div>
             <div style="margin: 10px 0;">
                 <span class="map-toggle" id="mapToggleBtn"><i class="fas fa-map-marker-alt"></i> Мы на карте</span>
                 <div id="mapContainer" class="map-collapsed">
@@ -207,8 +210,8 @@
 </div>
 
 <script>
-    // Конфигурация Google Apps Script (замените на URL вашего Web App)
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzSoAuWz2ihbIbHNUSf0ocnoAG_gXqtzoNdEufaFTCuiRpUKgoGso8yBblRC1UCIo4LHQ/exec';  // ВСТАВИТЬ СВОЙ URL
+    // ========== КОНФИГУРАЦИЯ ==========
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzSoAuWz2ihbIbHNUSf0ocnoAG_gXqtzoNdEufaFTCuiRpUKgoGso8yBblRC1UCIo4LHQ/exec';
     let currentUser = null;
     let allCases = [];
     let allDocuments = [];
@@ -217,13 +220,13 @@
     let newsArticles = [];
     let newsLinks = [];
     let workHours = { start: "10:00", end: "18:00" };
-    let currentRssUrl = '';          // RSS URL из настроек
+    let currentRssUrl = '';
     let selectedArchiveCase = null;
     let planningMode = false;
     let activeTab = "cases";
     let casesSubTab = "current";
 
-    // ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ========================
+    // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -233,7 +236,6 @@
             return m;
         });
     }
-
     function showToast(msg, isErr) {
         var toast = document.createElement('div');
         toast.className = 'toast-msg';
@@ -241,7 +243,6 @@
         document.body.appendChild(toast);
         setTimeout(function() { toast.remove(); }, 2500);
     }
-
     function showModal(options) {
         var overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -255,7 +256,6 @@
         if(cancelBtn) cancelBtn.onclick = function() { if(options.onCancel) options.onCancel(); close(); };
         overlay.onclick = function(e) { if(e.target === overlay) close(); };
     }
-
     async function loadDocumentContent(docName) {
         const baseUrl = 'https://spoiler038.github.io/sovet-yurista/';
         try {
@@ -266,7 +266,6 @@
             return '[Документ "' + docName + '.txt" не найден]';
         }
     }
-
     function showDocumentModal(title, content) {
         var overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -276,7 +275,7 @@
         overlay.onclick = function(e) { if(e.target === overlay) overlay.remove(); };
     }
 
-    // ======================== GAS ВЗАИМОДЕЙСТВИЕ ========================
+    // ========== GAS ВЗАИМОДЕЙСТВИЕ ==========
     function callGas(action, params, callback) {
         var script = document.createElement('script');
         var callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
@@ -292,7 +291,6 @@
         script.src = url;
         document.body.appendChild(script);
     }
-
     function syncDataFromServer() {
         return new Promise((resolve) => {
             callGas('getAllData', { deviceId: localStorage.getItem('deviceId') || '' }, (data) => {
@@ -313,7 +311,6 @@
             });
         });
     }
-
     function saveToServer() {
         var payload = {
             cases: JSON.stringify(allCases),
@@ -327,13 +324,11 @@
         };
         callGas('saveAllData', payload, (res) => { console.log('Saved', res); });
     }
-
     function persistCurrentUser() {
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         if(currentUser) localStorage.setItem('deviceId', currentUser.deviceId || '');
         else localStorage.removeItem('deviceId');
     }
-
     function autoLogin() {
         var deviceId = localStorage.getItem('deviceId');
         if(!deviceId) return;
@@ -350,7 +345,7 @@
         });
     }
 
-    // ======================== ФУНКЦИИ РЕНДЕРИНГА ========================
+    // ========== ФУНКЦИИ РЕНДЕРИНГА ==========
     function renderNewsOnLogin() {
         var container = document.getElementById('newsFeed');
         if(container) {
@@ -411,7 +406,6 @@
                 };
             });
         }
-        // Кнопка добавления ссылки
         document.getElementById('addLinkBtn')?.addEventListener('click', function() {
             var name = document.getElementById('newLinkName').value;
             var url = document.getElementById('newLinkUrl').value;
@@ -494,7 +488,6 @@
     }
 
     function attachDocAdminEvents() {
-        // Прикрепление документа к делу (из новых документов)
         document.querySelectorAll('.attach-doc-btn').forEach(btn => {
             btn.onclick = function() {
                 var docId = parseInt(this.dataset.id);
@@ -511,7 +504,6 @@
     }
 
     function attachDynamicEvents() {
-        // Загрузка документа (для клиента и для админа в режиме upload)
         document.getElementById('uploadDocBtn')?.addEventListener('click', function() {
             var file = document.getElementById('docFileInput').files[0];
             var caseId = document.getElementById('docCaseSelect')?.value;
@@ -527,7 +519,6 @@
             } else showToast("Выберите файл", true);
         });
 
-        // Запись на приём для клиента
         if(activeTab === 'calendar' && currentUser.role !== 'admin') {
             document.getElementById('bookSlotBtn')?.addEventListener('click', function() {
                 if(window.selectedSlot) {
@@ -562,7 +553,6 @@
             if(listDiv) listDiv.innerHTML = myApps.map(a => `<div class="card"><i class="fas fa-clock"></i> ${a.date} ${a.time} — ${a.status==='pending'?'⏳ ожидает':'✅ подтверждён'}</div>`).join('');
         }
 
-        // Вкладки (для админа в делах и документах)
         document.querySelectorAll('.tab').forEach(tab => {
             tab.onclick = function() {
                 var subtab = this.dataset.subtab;
@@ -572,14 +562,12 @@
             };
         });
 
-        // Сохранение часов работы
         document.getElementById('saveWorkHoursBtn')?.addEventListener('click', function() {
             workHours.start = document.getElementById('workStart').value;
             workHours.end = document.getElementById('workEnd').value;
             saveToServer();
             showToast("Часы работы сохранены");
         });
-        // Сохранение RSS URL
         document.getElementById('saveRssUrlBtn')?.addEventListener('click', function() {
             var newUrl = document.getElementById('rssUrlInput').value;
             if(newUrl) {
@@ -591,7 +579,6 @@
                 });
             } else showToast("Введите URL", true);
         });
-        // Принудительное обновление новостей
         document.getElementById('refreshNewsBtn')?.addEventListener('click', function() {
             callGas('refreshNews', { deviceId: localStorage.getItem('deviceId') }, (res) => {
                 if(res && res.success) {
@@ -602,7 +589,6 @@
         });
     }
 
-    // ======================== КАЛЕНДАРЬ ========================
     function renderCalendarUI() {
         var today = new Date();
         var year = today.getFullYear();
@@ -738,7 +724,7 @@
         }
     }
 
-    // ======================== ОСНОВНОЙ РЕНДЕР ========================
+    // ========== ОСНОВНОЙ РЕНДЕР ДАШБОРДА (ПОЛНЫЙ) ==========
     function renderDashboard() {
         if (!currentUser) return;
         document.getElementById('userAvatar').textContent = currentUser.login.charAt(0).toUpperCase();
@@ -750,17 +736,95 @@
         let html = '';
 
         if (activeTab === 'cases') {
-            // ... аналогично приведённому выше, но используйте escapeHtml и логику из предыдущей версии
-            // (для экономии места здесь не дублируем, но в итоговом коде он полный)
-            html = '<div>cases content</div>'; // placeholder, в реальном коде будет полная развёртка
+            if (isAdmin) {
+                html = `<div class="tabs"><div class="tab ${casesSubTab === 'current' ? 'active' : ''}" data-subtab="current">Текущие дела</div><div class="tab ${casesSubTab === 'archive' ? 'active' : ''}" data-subtab="archive">Архив</div></div>`;
+                if (selectedArchiveCase && casesSubTab === 'archive') {
+                    const c = selectedArchiveCase;
+                    html += `<div><button id="backToArchiveBtn" class="btn-outline btn-small" style="margin-bottom:16px;"><i class="fas fa-arrow-left"></i> Назад к списку</button>
+                        <div class="case-item"><h3>${escapeHtml(c.title)}</h3><p>Заявитель: ${escapeHtml(c.claimant || '—')} | Ответчик: ${escapeHtml(c.defendant || '—')} | Категория: ${escapeHtml(c.category || '—')}</p>
+                        <p>Результат: ${escapeHtml(c.result || 'Завершено')}</p><button id="restoreCaseBtn" class="btn-outline btn-small">Вернуть в работу</button>
+                        <h4>Хронология дела</h4>`;
+                    if (c.history && c.history.length) {
+                        for (const h of c.history) {
+                            html += `<div class="timeline-item"><strong>${escapeHtml(h.date)}</strong> — ${escapeHtml(h.status)} (${escapeHtml(h.stage || '')})<br>${h.docs && h.docs.length ? 'Документы: ' + h.docs.map(d => `<span class="doc-link" data-doc="${escapeHtml(d)}">${escapeHtml(d)}</span>`).join(', ') : ''}</div>`;
+                        }
+                    }
+                    html += `</div></div>`;
+                } else {
+                    let userCases = allCases.filter(c => isAdmin ? true : c.userId === currentUser.login);
+                    if (casesSubTab === 'current') userCases = userCases.filter(c => c.status !== "Завершено");
+                    else userCases = userCases.filter(c => c.status === "Завершено");
+                    if (casesSubTab === 'current') html += `<button id="addCaseBtn" class="btn btn-small" style="margin-bottom:16px;"><i class="fas fa-plus"></i> Добавить дело</button>`;
+                    for (const c of userCases) {
+                        html += `<div class="case-item" data-case-id="${c.id}"><div class="flex-between"><h3>${escapeHtml(c.title)}</h3><span class="status-badge">${escapeHtml(c.status)}</span></div>`;
+                        if (c.status !== "Завершено") {
+                            html += `<p>${escapeHtml(c.stage)}</p>`;
+                            if (isAdmin) {
+                                html += `<div class="flex-row"><select class="status-select" data-id="${c.id}" style="width:auto;"><option ${c.status === 'В процессе' ? 'selected' : ''}>В процессе</option><option ${c.status === 'Приостановлено' ? 'selected' : ''}>Приостановлено</option><option ${c.status === 'На рассмотрении' ? 'selected' : ''}>На рассмотрении</option><option ${c.status === 'Завершено' ? 'selected' : ''}>Завершено</option></select>
+                                <input type="number" class="progress-input" data-id="${c.id}" value="${c.progress}" style="width:60px;" min="0" max="100">%
+                                <button class="btn-outline btn-icon update-case-btn" data-id="${c.id}"><i class="fas fa-sync-alt"></i></button></div>`;
+                            } else {
+                                html += `<div class="progress-background"><div class="progress-fill" style="width:${c.progress}%;"></div></div><p>Прогресс: ${c.progress}%</p>`;
+                            }
+                        } else {
+                            html += `<p>Результат: ${escapeHtml(c.result || 'Завершено')}</p>`;
+                            if (isAdmin && casesSubTab === 'archive') html += `<button class="btn-outline btn-small view-detail-btn" data-id="${c.id}">Подробнее</button>`;
+                        }
+                        html += `</div>`;
+                    }
+                    if (userCases.length === 0) html += '<div class="card">Нет дел в этом разделе</div>';
+                }
+            } else {
+                // Клиентский вид
+                const userCases = allCases.filter(c => c.userId === currentUser.login);
+                const currentCase = userCases.find(c => c.status !== "Завершено");
+                const pastCases = userCases.filter(c => c.status === "Завершено");
+                html = '<h2>Мои дела</h2>';
+                if (currentCase) {
+                    html += `<div class="case-item"><div class="flex-between"><h3>${escapeHtml(currentCase.title)}</h3><span class="status-badge">${escapeHtml(currentCase.status)}</span></div><p>${escapeHtml(currentCase.stage)}</p>
+                        <div class="progress-background"><div class="progress-fill" style="width:${currentCase.progress}%;"></div></div><p>Прогресс: ${currentCase.progress}%</p>`;
+                    if (currentCase.history && currentCase.history.length) {
+                        html += '<h4>Хронология</h4>';
+                        for (const h of currentCase.history) {
+                            html += `<div class="timeline-item"><strong>${escapeHtml(h.date)}</strong> — ${escapeHtml(h.status)}<br>${h.docs && h.docs.length ? 'Документы: ' + h.docs.map(d => `<span class="doc-link" data-doc="${escapeHtml(d)}">${escapeHtml(d)}</span>`).join(', ') : ''}</div>`;
+                        }
+                    }
+                    html += `</div>`;
+                } else {
+                    html += '<div class="card">Нет текущих дел</div>';
+                }
+                if (pastCases.length) {
+                    html += '<h2>Завершённые</h2>';
+                    for (const p of pastCases) {
+                        html += `<div class="case-item"><strong>${escapeHtml(p.title)}</strong><p>Результат: ${escapeHtml(p.result || 'Завершено')}</p></div>`;
+                    }
+                }
+            }
         } else if (activeTab === 'calendar') {
             html = `<h2><i class="fas fa-calendar-alt"></i> ${isAdmin ? 'Управление записью' : 'Запись на приём'}</h2>
                 <div class="card"><div id="simpleCalendar"></div><div id="timeSlotsArea"></div>
                 ${isAdmin ? '<button id="planningToggleBtn" class="btn btn-small" style="margin-top:16px;"><i class="fas fa-calendar-plus"></i> Планирование</button>' : '<button id="bookSlotBtn" class="btn" style="margin-top:20px; width:100%;"><i class="fas fa-check"></i> Записаться</button>'}
                 </div><h3>Мои записи</h3><div id="myAppointmentsList"></div>`;
         } else if (activeTab === 'documents') {
-            // аналогично
-            html = '<div>documents content</div>';
+            if (isAdmin) {
+                html = `<div class="tabs"><div class="tab ${casesSubTab === 'new' ? 'active' : ''}" data-subtab="new">Новые документы</div><div class="tab ${casesSubTab === 'upload' ? 'active' : ''}" data-subtab="upload">Загрузить</div></div>`;
+                if (casesSubTab === 'new') {
+                    const newDocs = allDocuments.filter(d => d.status === 'new' && !d.adminSeen);
+                    html += '<div id="newDocsList">';
+                    for (const d of newDocs) {
+                        html += `<div class="file-item"><span><i class="fas fa-file-pdf"></i> ${escapeHtml(d.fileName)} (клиент: ${escapeHtml(d.userId)})</span><div><button class="btn-outline btn-small view-doc-btn" data-id="${d.id}">Просмотреть</button><button class="btn-outline btn-small attach-doc-btn" data-id="${d.id}">Прикрепить к делу</button></div></div>`;
+                    }
+                    html += '</div>';
+                } else {
+                    let caseOptions = '';
+                    for (const c of allCases) caseOptions += `<option value="${c.id}">${escapeHtml(c.title)}</option>`;
+                    html += `<div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">${caseOptions}</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn btn-small">Загрузить</button></div><h3>Все документы</h3><div id="userDocsList"></div>`;
+                }
+            } else {
+                let caseOptions = '';
+                for (const c of allCases.filter(c => c.userId === currentUser.login)) caseOptions += `<option value="${c.id}">${escapeHtml(c.title)}</option>`;
+                html = `<h2>Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">${caseOptions}</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn btn-small">Загрузить</button></div><h3>Мои документы</h3><div id="userDocsList"></div>`;
+            }
         } else if (activeTab === 'admin' && isAdmin) {
             html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
                 <div class="card"><h3>Часы работы</h3><div class="flex-row"><input type="time" id="workStart" value="${workHours.start}"><span>—</span><input type="time" id="workEnd" value="${workHours.end}"><button id="saveWorkHoursBtn" class="btn-outline btn-small">Сохранить</button></div></div>
@@ -782,7 +846,7 @@
         });
     }
 
-    // ======================== НАВИГАЦИЯ ========================
+    // ========== НАВИГАЦИЯ ==========
     function buildBottomNav() {
         var navDiv = document.getElementById('bottomNav');
         var isAdmin = currentUser && currentUser.role === 'admin';
@@ -826,7 +890,52 @@
         };
     }
 
-    // ======================== ВХОД И ИНИЦИАЛИЗАЦИЯ ========================
+    // ========== ВХОД, ВЫХОД, РЕГИСТРАЦИЯ ==========
+    function logout() {
+        showModal({ title: "Выход", message: "Вы действительно хотите выйти?", confirmText: "Да, выйти", showCancel: true, onConfirm: function() {
+            callGas('logout', { deviceId: localStorage.getItem('deviceId') }, () => {});
+            localStorage.removeItem('deviceId');
+            currentUser = null;
+            persistCurrentUser();
+            document.getElementById('appDashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('consentCheckbox').checked = false;
+            document.getElementById('doLoginBtn').disabled = true;
+            showToast("Вы вышли из системы");
+        } });
+    }
+
+    function showRegisterForm() {
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `<div class="modal-container"><h3>Регистрация</h3>
+            <input type="text" id="regLogin" placeholder="Логин">
+            <input type="password" id="regPassword" placeholder="Пароль">
+            <input type="text" id="regFullName" placeholder="ФИО">
+            <input type="tel" id="regPhone" placeholder="Телефон">
+            <div class="modal-buttons"><button id="regSubmitBtn" class="btn">Зарегистрироваться</button><button id="regCancelBtn" class="btn-outline">Отмена</button></div></div>`;
+        document.body.appendChild(overlay);
+        document.getElementById('regSubmitBtn').onclick = function() {
+            var login = document.getElementById('regLogin').value.trim();
+            var password = document.getElementById('regPassword').value.trim();
+            var fullName = document.getElementById('regFullName').value.trim();
+            var phone = document.getElementById('regPhone').value.trim();
+            if (!login || !password) {
+                showToast("Заполните логин и пароль", true);
+                return;
+            }
+            callGas('register', { login: login, password: password, fullName: fullName, phone: phone }, (res) => {
+                if (res && res.success) {
+                    overlay.remove();
+                    showModal({ title: "Регистрация", message: "Регистрация успешна! Теперь вы можете войти.", icon: "fas fa-check", confirmText: "OK" });
+                } else {
+                    showToast("Ошибка: " + (res.error || "неизвестная"), true);
+                }
+            });
+        };
+        document.getElementById('regCancelBtn').onclick = function() { overlay.remove(); };
+    }
+
     function setupConsent() {
         var chk = document.getElementById('consentCheckbox');
         var btn = document.getElementById('doLoginBtn');
@@ -840,6 +949,7 @@
             });
         });
         chk.onchange = function() { btn.disabled = !chk.checked; };
+        document.getElementById('showRegisterBtn')?.addEventListener('click', showRegisterForm);
     }
 
     async function handleLogin() {
