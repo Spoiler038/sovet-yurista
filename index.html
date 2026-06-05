@@ -198,6 +198,11 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .flex-row input, .flex-row select, .flex-row textarea { margin-bottom: 0; }
+        .docs-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
     </style>
 </head>
 <body>
@@ -1037,18 +1042,20 @@
             }
         } else if (activeTab === 'userSettings') {
             html = `<h2><i class="fas fa-user-cog"></i> Настройки аккаунта</h2>
-            <div class="card">
-                <h3>Смена пароля</h3>
-                <input type="password" id="oldPassword" placeholder="Старый пароль">
-                <input type="password" id="newPassword" placeholder="Новый пароль">
-                <input type="password" id="newPasswordConfirm" placeholder="Подтвердите новый пароль">
-                <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
-            </div>
-            <div class="card">
-                <h3>Документы</h3>
-                <button id="downloadAgreementBtn" class="btn-outline btn-small">Скачать пользовательское соглашение (PDF)</button>
-                <button id="downloadPrivacyBtn" class="btn-outline btn-small">Скачать политику конфиденциальности (PDF)</button>
-            </div>`;
+    <div class="card">
+        <h3>Смена пароля</h3>
+        <input type="password" id="oldPassword" placeholder="Старый пароль">
+        <input type="password" id="newPassword" placeholder="Новый пароль">
+        <input type="password" id="newPasswordConfirm" placeholder="Подтвердите новый пароль">
+        <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
+    </div>
+    <div class="card">
+        <h3>Документы</h3>
+        <div class="docs-buttons">
+            <button id="downloadAgreementBtn" class="btn-outline btn-small">Скачать пользовательское соглашение (PDF)</button>
+            <button id="downloadPrivacyBtn" class="btn-outline btn-small">Скачать политику конфиденциальности (PDF)</button>
+        </div>
+    </div>`;
         } else if (activeTab === 'admin' && isAdmin) {
             html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
             <div class="card">
@@ -1264,15 +1271,16 @@
     }
 
     async function init() {
-        await syncDataFromServer();
-        renderNewsOnLogin();
-        setupConsent();
-        document.getElementById('doLoginBtn').onclick = handleLogin;
-        document.getElementById('logoutBtn')?.addEventListener('click', logout);
-        document.getElementById('addressCopy')?.addEventListener('click', function() { navigator.clipboard.writeText(this.innerText); showToast("Адрес скопирован"); });
-        document.getElementById('mapToggleBtn')?.addEventListener('click', function() { document.getElementById('mapContainer').classList.toggle('map-collapsed'); });
+    await syncDataFromServer();
+    renderNewsOnLogin();
+    setupConsent();
+    document.getElementById('doLoginBtn').onclick = handleLogin;
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    document.getElementById('addressCopy')?.addEventListener('click', function() { navigator.clipboard.writeText(this.innerText); showToast("Адрес скопирован"); });
+    document.getElementById('mapToggleBtn')?.addEventListener('click', function() { document.getElementById('mapContainer').classList.toggle('map-collapsed'); });
+       initNavigation();
         autoLogin();
-        initNavigation();
+        
         if (currentUser) {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('appDashboard').classList.remove('hidden');
