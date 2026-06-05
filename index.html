@@ -303,12 +303,13 @@
     let blockedSlots = [];
     let newsArticles = [];
     let newsLinks = [];
-    let workHours = { start: "10:00", end: "18:00" };
+    let workHours = { start: "09:00", end: "18:00" };
     let currentRssUrl = '';
     let selectedArchiveCase = null;
     let planningMode = false;
     let activeTab = "cases";
     let casesSubTab = "current";
+    let allUsers = [];
 
     // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
     function escapeHtml(str) {
@@ -408,6 +409,7 @@
                     allAppointments = data.appointments || [];
                     blockedSlots = data.blockedSlots || [];
                     newsArticles = data.newsArticles || [];
+                    allUsers = data.usersList || [];
                     console.log('Новости:', newsArticles);
                     newsLinks = data.newsLinks || [];
                     workHours = data.workHours || { start: "09:00", end: "18:00" };
@@ -593,32 +595,39 @@
             }
         });
         document.getElementById('addCaseBtn')?.addEventListener('click', () => {
-            var overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
-            overlay.innerHTML = `<div class="modal-container"><h3>Новое дело</h3>
-                <input id="newCaseTitle" placeholder="Название дела">
-                <select id="newClaimant"><option value="">Введите вручную</option>${userOptions}</select>
-                <input id="newDefendant"><option value="">Введите вручную</option>${userOptions}</select> placeholder="Ответчик">
-                <select id="newCategory"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select>
-                <div class="modal-buttons"><button id="createCaseBtn" class="btn">Создать</button><button id="cancelCaseBtn" class="btn-outline">Отмена</button></div></div>`;
-            document.body.appendChild(overlay);
-            document.getElementById('createCaseBtn').onclick = function() {
-                var newId = Date.now();
-                allCases.push({
-                    id: newId, userId: "admin", title: document.getElementById('newCaseTitle').value,
-                    status: "В процессе", stage: "Новое", progress: 0, result: null, history: [],
-                    claimant: document.getElementById('newClaimant').value,
-                    defendant: document.getElementById('newDefendant').value,
-                    category: document.getElementById('newCategory').value
-                });
-                saveToServer();
-                overlay.remove();
-                renderDashboard();
-                showToast("Дело добавлено");
-            };
-            document.getElementById('cancelCaseBtn').onclick = function() { overlay.remove(); };
+    var userOptionsHtml = getUserOptions();
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-container"><h3>Новое дело</h3>
+        <input id="newCaseTitle" placeholder="Название дела">
+        <select id="newClaimant" style="margin-bottom:12px;"><option value="">Выберите или введите заявителя</option>${userOptionsHtml}</select>
+        <select id="newDefendant" style="margin-bottom:12px;"><option value="">Выберите или введите ответчика</option>${userOptionsHtml}</select>
+        <select id="newCategory"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select>
+        <div class="modal-buttons"><button id="createCaseBtn" class="btn">Создать</button><button id="cancelCaseBtn" class="btn-outline">Отмена</button></div></div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('createCaseBtn').onclick = function() {
+        var newId = Date.now();
+        var claimantVal = document.getElementById('newClaimant').value;
+        var defendantVal = document.getElementById('newDefendant').value;
+        allCases.push({
+            id: newId, userId: "admin", title: document.getElementById('newCaseTitle').value,
+            status: "В процессе", stage: "Новое", progress: 0, result: null, history: [],
+            claimant: claimantVal,
+            defendant: defendantVal,
+            category: document.getElementById('newCategory').value
         });
-    }
+        saveToServer();
+        overlay.remove();
+        renderDashboard();
+        showToast("Дело добавлено");
+    };
+    document.getElementById('cancelCaseBtn').onclick = function() { overlay.remove(); };
+});
+
+    function getUserOptions() {
+    if (!allUsers || allUsers.length === 0) return '';
+    return allUsers.map(user => `<option value="${escapeHtml(user.login)}">${escapeHtml(user.fullName || user.login)}</option>`).join('');
+}
 
     function attachDocAdminEvents() {
         document.querySelectorAll('.attach-doc-btn').forEach(btn => {
@@ -747,6 +756,40 @@
                 }
             });
         });
+
+        // Смена пароля (для обычного пользователя)
+document.getElementById('changePasswordBtn')?.addEventListener('click', function() {
+    var oldPass = document.getElementById('oldPassword').value;
+    var newPass = document.getElementById('newPassword').value;
+    var newPassConfirm = document.getElementById('newPasswordConfirm').value;
+    if (!oldPass || !newPass) {
+        showToast("Заполните старый и новый пароль", true);
+        return;
+    }
+    if (newPass !== newPassConfirm) {
+        showToast("Новый пароль и подтверждение не совпадают", true);
+        return;
+    }
+    callGas('changePassword', { userId: currentUser.id, oldPassword: oldPass, newPassword: newPass, deviceId: localStorage.getItem('deviceId') }, (res) => {
+        if (res && res.success) {
+            showToast("Пароль успешно изменён");
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('newPasswordConfirm').value = '';
+        } else {
+            showToast("Ошибка: " + (res.error || "неверный старый пароль"), true);
+        }
+    });
+});
+
+// Скачивание документов (PDF)
+document.getElementById('downloadAgreementBtn')?.addEventListener('click', function() {
+    // Вариант 1: ссылка на готовый PDF на сервере
+    window.open('https://spoiler038.github.io/sovet-yurista/docs/user-agreement.pdf', '_blank');
+});
+document.getElementById('downloadPrivacyBtn')?.addEventListener('click', function() {
+    window.open('https://spoiler038.github.io/sovet-yurista/docs/privacy-policy.pdf', '_blank');
+});
     }
 
     function renderCalendarUI() {
@@ -1068,48 +1111,92 @@
 
     // ========== НАВИГАЦИЯ ==========
     function buildBottomNav() {
-        var navDiv = document.getElementById('bottomNav');
-        var isAdmin = currentUser && currentUser.role === 'admin';
-        var tabs = [
-            {id:'cases', icon:'fas fa-gavel', label:'Дела'},
-            {id:'calendar', icon:'fas fa-calendar-alt', label:'Календарь'},
-            {id:'documents', icon:'fas fa-file-alt', label:'Документы'},
-            {id:'userSettings', icon:'fas fa-user-cog', label:'Настройки'}
-        ];
-        if(isAdmin) tabs.push({id:'admin', icon:'fas fa-user-shield', label:'Настройки'});
-        var navHtml = '';
-        for(var t of tabs) {
-            var activeClass = (activeTab === t.id) ? 'active' : '';
-            navHtml += `<div class="nav-item ${activeClass}" data-tab="${t.id}"><i class="${t.icon}"></i><span>${t.label}</span></div>`;
-        }
-        navDiv.innerHTML = navHtml;
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.onclick = function() {
-                activeTab = this.dataset.tab;
-                casesSubTab = 'current';
-                selectedArchiveCase = null;
-                planningMode = false;
-                renderDashboard();
-                history.pushState({tab: activeTab}, '', '#' + activeTab);
-            };
-        });
-        window.onpopstate = function(e) {
-            if(e.state && e.state.tab) activeTab = e.state.tab;
-            else activeTab = 'cases';
+    var navDiv = document.getElementById('bottomNav');
+    var isAdmin = currentUser && currentUser.role === 'admin';
+    var tabs = [
+        { id: 'cases', icon: 'fas fa-gavel', label: 'Дела' },
+        { id: 'calendar', icon: 'fas fa-calendar-alt', label: 'Календарь' },
+        { id: 'documents', icon: 'fas fa-file-alt', label: 'Документы' }
+    ];
+    if (!isAdmin) {
+        tabs.push({ id: 'userSettings', icon: 'fas fa-user-cog', label: 'Настройки' });
+    } else {
+        tabs.push({ id: 'admin', icon: 'fas fa-user-shield', label: 'Настройки' });
+    }
+    var navHtml = '';
+    for (var t of tabs) {
+        var activeClass = (activeTab === t.id) ? 'active' : '';
+        navHtml += `<div class="nav-item ${activeClass}" data-tab="${t.id}"><i class="${t.icon}"></i><span>${t.label}</span></div>`;
+    }
+    navDiv.innerHTML = navHtml;
+
+    // Клики по вкладкам
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.onclick = function() {
+            activeTab = this.dataset.tab;
+            casesSubTab = 'current';
+            selectedArchiveCase = null;
+            planningMode = false;
             renderDashboard();
+            history.pushState({ tab: activeTab }, '', '#' + activeTab);
         };
-        var touchStart = 0;
-        document.getElementById('appDashboard').ontouchstart = function(e) { touchStart = e.changedTouches[0].screenX; };
-        document.getElementById('appDashboard').ontouchend = function(e) {
-            var diff = e.changedTouches[0].screenX - touchStart;
-            var order = isAdmin ? ['cases','calendar','documents','admin'] : ['cases','calendar','documents'];
-            var idx = order.indexOf(activeTab);
-            if(diff > 50 && idx > 0) activeTab = order[idx-1];
-            if(diff < -50 && idx < order.length-1) activeTab = order[idx+1];
+    });
+}
+
+    // ========== НАСТРОЙКА НАВИГАЦИИ (один раз) ==========
+function initNavigation() {
+    // Обработчик кнопки "Назад" браузера (popstate)
+    window.onpopstate = function(e) {
+        if (e.state && e.state.tab) {
+            activeTab = e.state.tab;
+        } else {
+            // Если состояния нет – пробуем прочитать хэш
+            const hash = window.location.hash.slice(1);
+            if (hash && ['cases', 'calendar', 'documents', 'admin', 'userSettings'].includes(hash)) {
+                activeTab = hash;
+            } else {
+                activeTab = 'cases';
+            }
+        }
+        casesSubTab = 'current';
+        selectedArchiveCase = null;
+        planningMode = false;
+        renderDashboard();
+    };
+
+    // Обработчики свайпов (горизонтальное перелистывание)
+    const dashboard = document.getElementById('appDashboard');
+    if (dashboard) {
+        let touchStart = 0;
+        dashboard.ontouchstart = function(e) {
+            touchStart = e.changedTouches[0].screenX;
+        };
+        dashboard.ontouchend = function(e) {
+            const diff = e.changedTouches[0].screenX - touchStart;
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            const order = isAdmin
+                ? ['cases', 'calendar', 'documents', 'admin']
+                : ['cases', 'calendar', 'documents'];
+            const idx = order.indexOf(activeTab);
+            if (diff > 50 && idx > 0) activeTab = order[idx - 1];
+            if (diff < -50 && idx < order.length - 1) activeTab = order[idx + 1];
             renderDashboard();
-            history.pushState({tab: activeTab}, '', '#' + activeTab);
+            history.pushState({ tab: activeTab }, '', '#' + activeTab);
         };
     }
+
+    // Инициализация активной вкладки из URL-хэша (если есть)
+    const hash = window.location.hash.slice(1);
+    if (hash && ['cases', 'calendar', 'documents', 'admin', 'userSettings'].includes(hash)) {
+        activeTab = hash;
+    } else {
+        activeTab = 'cases';
+    }
+    // Если пользователь уже авторизован – отрисовать дашборд с выбранной вкладкой
+    if (currentUser) {
+        renderDashboard();
+    }
+}
 
     // ========== ВХОД, ВЫХОД, РЕГИСТРАЦИЯ ==========
     function logout() {
@@ -1197,21 +1284,25 @@
     }
 
     async function init() {
-        await syncDataFromServer();
-        renderNewsOnLogin();
-        setupConsent();
-        document.getElementById('doLoginBtn').onclick = handleLogin;
-        document.getElementById('logoutBtn')?.addEventListener('click', logout);
-        document.getElementById('addressCopy')?.addEventListener('click', function() { navigator.clipboard.writeText(this.innerText); showToast("Адрес скопирован"); });
-        document.getElementById('mapToggleBtn')?.addEventListener('click', function() { document.getElementById('mapContainer').classList.toggle('map-collapsed'); });
-        autoLogin();
-        if(currentUser) {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('appDashboard').classList.remove('hidden');
-            buildBottomNav();
-            renderDashboard();
-        }
+    await syncDataFromServer();
+    renderNewsOnLogin();
+    setupConsent();
+    document.getElementById('doLoginBtn').onclick = handleLogin;
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    document.getElementById('addressCopy')?.addEventListener('click', function() { navigator.clipboard.writeText(this.innerText); showToast("Адрес скопирован"); });
+    document.getElementById('mapToggleBtn')?.addEventListener('click', function() { document.getElementById('mapContainer').classList.toggle('map-collapsed'); });
+    autoLogin();
+
+    // Вызов настройки навигации (один раз)
+    initNavigation();
+
+    if (currentUser) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('appDashboard').classList.remove('hidden');
+        buildBottomNav();
+        renderDashboard();
     }
+}
     init();
     if('serviceWorker' in navigator) navigator.serviceWorker.register('/sovet-yurista/sw.js').catch(e=>console.log);
 </script>
