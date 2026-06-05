@@ -622,8 +622,9 @@
         showToast("Дело добавлено");
     };
     document.getElementById('cancelCaseBtn').onclick = function() { overlay.remove(); };
-});
-
+    });
+}
+    
     function getUserOptions() {
     if (!allUsers || allUsers.length === 0) return '';
     return allUsers.map(user => `<option value="${escapeHtml(user.login)}">${escapeHtml(user.fullName || user.login)}</option>`).join('');
