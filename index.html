@@ -799,180 +799,245 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
     }
 
     function renderCalendarUI() {
-        var today = new Date();
-        var year = today.getFullYear();
-        var month = today.getMonth();
-        var daysInMonth = new Date(year, month+1, 0).getDate();
-        var calHtml = '<div class="cal-grid">' + ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>'<div style="font-weight:bold;">'+d+'</div>').join('');
-        var firstDay = new Date(year, month, 1);
-        var startOffset = firstDay.getDay() - 1;
-        if(startOffset < 0) startOffset = 6;
-        for(var s=0; s<startOffset; s++) calHtml += '<div></div>';
-        for(var d=1; d<=daysInMonth; d++) {
-            var ds = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-            calHtml += '<div class="cal-day" data-date="' + ds + '">' + d + '</div>';
+    var today = new Date();
+    var year = today.getFullYear();
+    var month = today.getMonth();
+    var daysInMonth = new Date(year, month+1, 0).getDate();
+    var calHtml = '<div class="cal-grid">' + ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>'<div style="font-weight:bold;">'+d+'</div>').join('');
+    var firstDay = new Date(year, month, 1);
+    var startOffset = firstDay.getDay() - 1;
+    if(startOffset < 0) startOffset = 6;
+    for(var s=0; s<startOffset; s++) calHtml += '<div></div>';
+    for(var d=1; d<=daysInMonth; d++) {
+        var ds = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+        calHtml += '<div class="cal-day" data-date="' + ds + '">' + d + '</div>';
+    }
+    calHtml += '</div>';
+    document.getElementById('simpleCalendar').innerHTML = calHtml;
+    
+    // Отдельный контейнер для слотов
+    var slotsContainer = document.getElementById('timeSlotsArea');
+    if (!slotsContainer) return;
+    
+    // Функция загрузки слотов для выбранной даты
+    function loadSlotsForDate(date) {
+        if (currentUser.role === 'admin') {
+            if (planningMode) {
+                showPlanningPanel(date);
+            } else {
+                showAppointmentsForDate(date);
+            }
+        } else {
+            renderTimeSlots(date);
         }
-        calHtml += '</div>';
-        document.getElementById('simpleCalendar').innerHTML = calHtml;
-        var selectedDate = null;
+    }
+    
+    function showAppointmentsForDate(date) {
+        var apps = allAppointments.filter(a => a.date === date);
+        var listDiv = document.getElementById('timeSlotsArea');
+        var appsHtml = '<div><h4>Записи на ' + date + '</h4>';
+        if (apps.length === 0) {
+            appsHtml += '<p>Нет записей</p>';
+        } else {
+            for(var a of apps) {
+                appsHtml += '<div class="appointment-item" data-id="' + a.id + '"><strong>' + a.time + '</strong> — ' + escapeHtml(a.clientName) + '<br><small>' + escapeHtml(a.topic || '') + '</small></div>';
+            }
+        }
+        appsHtml += '</div>';
+        listDiv.innerHTML = appsHtml;
         
-        function showAppointmentsForDate(date) {
-            var apps = allAppointments.filter(a => a.date === date);
-            var listDiv = document.getElementById('timeSlotsArea');
-            var appsHtml = '<div><h4>Записи на ' + date + '</h4>';
-            for(var a of apps) appsHtml += '<div class="appointment-item" data-id="' + a.id + '"><strong>' + a.time + '</strong> — ' + escapeHtml(a.clientName) + '<br><small>' + escapeHtml(a.topic || '') + '</small></div>';
-            appsHtml += '</div>';
-            listDiv.innerHTML = appsHtml || '<p>Нет записей</p>';
-            document.querySelectorAll('.appointment-item').forEach(item => {
-                item.onclick = function() {
-                    var app = allAppointments.find(a => a.id == this.dataset.id);
-                    if(app) showModal({ title: "Данные клиента", message: "Имя: " + app.clientName + "\nТелефон: " + (app.phone || "не указан") + "\nТема: " + (app.topic || "—"), icon: "fas fa-user", confirmText: "Позвонить", showCancel: true, onConfirm: () => { if(app.phone) window.location.href = "tel:" + app.phone; } });
+        document.querySelectorAll('.appointment-item').forEach(item => {
+            item.onclick = function(e) {
+                e.stopPropagation();
+                var app = allAppointments.find(a => a.id == this.dataset.id);
+                if(app) {
+                    showModal({ 
+                        title: "Данные клиента", 
+                        message: "Имя: " + app.clientName + "\nТелефон: " + (app.phone || "не указан") + "\nТема: " + (app.topic || "—"), 
+                        icon: "fas fa-user", 
+                        confirmText: "Позвонить", 
+                        showCancel: true, 
+                        onConfirm: () => { 
+                            if(app.phone) window.location.href = "tel:" + app.phone; 
+                        } 
+                    });
+                }
+            };
+        });
+    }
+    
+    function renderTimeSlots(date) {
+        if (!workHours || !workHours.start || !workHours.end) {
+            console.warn('workHours не загружены');
+            return;
+        }
+        var slots = [];
+        var s = parseInt(workHours.start.split(':')[0]);
+        var e = parseInt(workHours.end.split(':')[0]);
+        for(var h=s; h<e; h++) slots.push(h + ':' + (h === s ? '00' : '00'));
+        
+        var timesDiv = document.getElementById('timeSlotsArea');
+        var slotsHtml = '<div><h4>Доступное время на ' + date + '</h4><div class="time-slots">';
+        for(var i=0; i<slots.length; i++) {
+            var t = slots[i];
+            var blocked = blockedSlots.some(b => b.date === date && b.timeStart <= t && b.timeEnd >= t);
+            var booked = allAppointments.some(a => a.date === date && a.time === t);
+            slotsHtml += '<div class="slot ' + (blocked||booked ? 'booked' : 'free') + '" data-time="' + t + '">' + t + (blocked||booked ? ' ❌' : ' ✅') + '</div>';
+        }
+        slotsHtml += '</div></div>';
+        timesDiv.innerHTML = slotsHtml;
+        
+        if(currentUser.role !== 'admin') {
+            document.querySelectorAll('.slot.free').forEach(slot => {
+                // Убираем старый обработчик, чтобы не было дублирования
+                slot.removeEventListener('click', slot._clickHandler);
+                // Создаём новый обработчик
+                var handler = function(e) {
+                    e.stopPropagation();
+                    // Снимаем выделение со всех слотов
+                    document.querySelectorAll('.slot.free').forEach(s => {
+                        s.style.border = '';
+                        s.style.transform = '';
+                        s.style.boxShadow = '';
+                    });
+                    window.selectedSlot = { date: date, time: this.dataset.time };
+                    this.style.border = '2px solid #FAC643';
+                    this.style.transform = 'scale(1.02)';
+                    this.style.boxShadow = '0 0 10px rgba(250,198,67,0.5)';
+                    showToast("Выбран слот: " + this.dataset.time);
                 };
+                slot._clickHandler = handler;
+                slot.addEventListener('click', handler);
             });
         }
-        
-       function renderTimeSlots(date) {
-    if (!workHours || !workHours.start || !workHours.end) {
-        console.warn('workHours не загружены');
-        return;
     }
-            var slots = [];
-            var s = parseInt(workHours.start.split(':')[0]);
-            var e = parseInt(workHours.end.split(':')[0]);
-            for(var h=s; h<e; h++) slots.push(h+':00');
-            var timesDiv = document.getElementById('timeSlotsArea');
-            var slotsHtml = '<div class="time-slots">';
-            for(var i=0; i<slots.length; i++) {
-                var t = slots[i];
-                var blocked = blockedSlots.some(b => b.date === date && b.timeStart <= t && b.timeEnd >= t);
-                var booked = allAppointments.some(a => a.date === date && a.time === t);
-                slotsHtml += '<div class="slot ' + (blocked||booked ? 'booked' : 'free') + '" data-time="' + t + '">' + t + (blocked||booked ? ' ❌' : ' ✅') + '</div>';
-            }
-            slotsHtml += '</div>';
-            timesDiv.innerHTML = slotsHtml;
-            if(currentUser.role !== 'admin') {
-                document.querySelectorAll('.slot.free').forEach(slot => {
-                    slot.onclick = function(e) {
-                        e.stopPropagation();
-                        // Снимаем выделение со всех слотов
-                        document.querySelectorAll('.slot.free').forEach(s => {
-                            s.style.border = '';
-                            s.style.transform = '';
-                        });
-                        window.selectedSlot = { date: date, time: this.dataset.time };
-                        this.style.border = '2px solid #FAC643';
-                        this.style.transform = 'scale(1.02)';
-                    };
-                });
-            }
-        }
+    
+    function showPlanningPanel(date) {
+        var panel = document.getElementById('timeSlotsArea');
+        panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало" style="flex:1;"><input type="time" id="blockEnd" placeholder="Конец" style="flex:1;"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList" style="margin-top:12px;"></div></div>';
         
-        function showPlanningPanel(date) {
-            var panel = document.getElementById('timeSlotsArea');
-            panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList"></div></div>';
-            
-            var blockStart = document.getElementById('blockStart');
-            var blockEnd = document.getElementById('blockEnd');
-            
-            renderBlockedPeriods(date);
-            
-            document.getElementById('addBlockPeriodBtn').onclick = function(e) {
+        renderBlockedPeriods(date);
+        
+        var addBtn = document.getElementById('addBlockPeriodBtn');
+        if (addBtn) {
+            // Убираем старый обработчик
+            addBtn.removeEventListener('click', addBtn._clickHandler);
+            var handler = function(e) {
                 e.stopPropagation();
                 e.preventDefault();
                 var start = document.getElementById('blockStart').value;
                 var end = document.getElementById('blockEnd').value;
                 if(start && end) {
-                    blockedSlots.push({ date: date, timeStart: start, timeEnd: end });
+                    blockedSlots.push({ date: date, timeStart: start, timeEnd: end, id: Date.now() });
                     saveToServer();
                     renderBlockedPeriods(date);
                     showToast("Период заблокирован");
                     document.getElementById('blockStart').value = '';
                     document.getElementById('blockEnd').value = '';
-                } else showToast("Выберите время", true);
-            };
-        }
-        
-        function renderBlockedPeriods(date) {
-            var periods = blockedSlots.filter(b => b.date === date);
-            var listDiv = document.getElementById('blockedPeriodsList');
-            if(listDiv) {
-                listDiv.innerHTML = periods.map((p, idx) => '<div class="flex-between"><span>' + p.timeStart + ' — ' + p.timeEnd + '</span><div><button class="btn-outline btn-small edit-period" data-idx="' + idx + '"><i class="fas fa-pencil-alt"></i></button><button class="btn-outline btn-small del-period" data-idx="' + idx + '"><i class="fas fa-trash-alt"></i></button></div></div>').join('');
-                document.querySelectorAll('.del-period').forEach(btn => {
-                    btn.onclick = function(e) {
-                        e.stopPropagation();
-                        var idx = parseInt(this.dataset.idx);
-                        var periodToRemove = blockedSlots.filter((p,i) => p.date === date)[idx];
-                        if(periodToRemove) {
-                            var indexToRemove = blockedSlots.findIndex(p => p.date === date && p.timeStart === periodToRemove.timeStart && p.timeEnd === periodToRemove.timeEnd);
-                            if(indexToRemove !== -1) {
-                                blockedSlots.splice(indexToRemove, 1);
-                                saveToServer();
-                                renderBlockedPeriods(date);
-                                showToast("Период удалён");
-                            }
-                        }
-                    };
-                });
-                document.querySelectorAll('.edit-period').forEach(btn => {
-                    btn.onclick = function(e) {
-                        e.stopPropagation();
-                        var idx = parseInt(this.dataset.idx);
-                        var period = blockedSlots.filter((p,i) => p.date === date)[idx];
-                        if(period) {
-                            var newStart = prompt("Новое время начала", period.timeStart);
-                            var newEnd = prompt("Новое время окончания", period.timeEnd);
-                            if(newStart && newEnd) {
-                                period.timeStart = newStart;
-                                period.timeEnd = newEnd;
-                                saveToServer();
-                                renderBlockedPeriods(date);
-                                showToast("Период обновлён");
-                            }
-                        }
-                    };
-                });
-            }
-        }
-        
-        document.querySelectorAll('.cal-day').forEach(el => {
-            el.onclick = function(e) {
-                if (e.target.closest('#timeSlotsArea') && planningMode) {
-                    return;
-                }
-                document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedDate = this.dataset.date;
-                if(currentUser.role === 'admin') {
-                    if(planningMode) showPlanningPanel(selectedDate);
-                    else showAppointmentsForDate(selectedDate);
                 } else {
-                    renderTimeSlots(selectedDate);
+                    showToast("Выберите время", true);
                 }
             };
-        });
-        
-        document.getElementById('planningToggleBtn')?.addEventListener('click', function() {
+            addBtn._clickHandler = handler;
+            addBtn.addEventListener('click', handler);
+        }
+    }
+    
+    function renderBlockedPeriods(date) {
+        var periods = blockedSlots.filter(b => b.date === date);
+        var listDiv = document.getElementById('blockedPeriodsList');
+        if(listDiv) {
+            if (periods.length === 0) {
+                listDiv.innerHTML = '<p>Нет заблокированных периодов</p>';
+                return;
+            }
+            listDiv.innerHTML = periods.map((p, idx) => '<div class="flex-between" style="margin-bottom:8px;"><span>' + p.timeStart + ' — ' + p.timeEnd + '</span><div><button class="btn-outline btn-small edit-period" data-idx="' + idx + '"><i class="fas fa-pencil-alt"></i></button><button class="btn-outline btn-small del-period" data-idx="' + idx + '"><i class="fas fa-trash-alt"></i></button></div></div>').join('');
+            
+            document.querySelectorAll('.del-period').forEach(btn => {
+                btn.removeEventListener('click', btn._clickHandler);
+                var handler = function(e) {
+                    e.stopPropagation();
+                    var idx = parseInt(this.dataset.idx);
+                    var periodToRemove = blockedSlots.filter(p => p.date === date)[idx];
+                    if(periodToRemove) {
+                        var indexToRemove = blockedSlots.findIndex(p => p.date === date && p.timeStart === periodToRemove.timeStart && p.timeEnd === periodToRemove.timeEnd);
+                        if(indexToRemove !== -1) {
+                            blockedSlots.splice(indexToRemove, 1);
+                            saveToServer();
+                            renderBlockedPeriods(date);
+                            showToast("Период удалён");
+                        }
+                    }
+                };
+                btn._clickHandler = handler;
+                btn.addEventListener('click', handler);
+            });
+            
+            document.querySelectorAll('.edit-period').forEach(btn => {
+                btn.removeEventListener('click', btn._clickHandler);
+                var handler = function(e) {
+                    e.stopPropagation();
+                    var idx = parseInt(this.dataset.idx);
+                    var period = blockedSlots.filter(p => p.date === date)[idx];
+                    if(period) {
+                        var newStart = prompt("Новое время начала", period.timeStart);
+                        var newEnd = prompt("Новое время окончания", period.timeEnd);
+                        if(newStart && newEnd) {
+                            period.timeStart = newStart;
+                            period.timeEnd = newEnd;
+                            saveToServer();
+                            renderBlockedPeriods(date);
+                            showToast("Период обновлён");
+                        }
+                    }
+                };
+                btn._clickHandler = handler;
+                btn.addEventListener('click', handler);
+            });
+        }
+    }
+    
+    // Обработчики кликов по дням
+    document.querySelectorAll('.cal-day').forEach(el => {
+        el.removeEventListener('click', el._clickHandler);
+        var handler = function(e) {
+            e.stopPropagation();
+            document.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            var selectedDate = this.dataset.date;
+            loadSlotsForDate(selectedDate);
+        };
+        el._clickHandler = handler;
+        el.addEventListener('click', handler);
+    });
+    
+    // Кнопка планирования
+    var planningBtn = document.getElementById('planningToggleBtn');
+    if (planningBtn) {
+        planningBtn.removeEventListener('click', planningBtn._clickHandler);
+        var btnHandler = function() {
             planningMode = !planningMode;
             this.innerHTML = planningMode ? '<i class="fas fa-calendar-day"></i> Обычный режим' : '<i class="fas fa-calendar-plus"></i> Планирование';
             var selectedDay = document.querySelector('.cal-day.selected');
             if(selectedDay && selectedDay.dataset.date) {
-                if(planningMode) showPlanningPanel(selectedDay.dataset.date);
-                else if(currentUser.role === 'admin') showAppointmentsForDate(selectedDay.dataset.date);
-                else renderTimeSlots(selectedDay.dataset.date);
+                loadSlotsForDate(selectedDay.dataset.date);
             } else if(selectedDay === null && document.querySelector('.cal-day')) {
                 document.querySelector('.cal-day').click();
             }
-        });
-        
-        var selectedDay = document.querySelector('.cal-day.selected');
-        if(selectedDay) {
-            if(currentUser.role === 'admin') {
-                if(planningMode) showPlanningPanel(selectedDay.dataset.date);
-                else showAppointmentsForDate(selectedDay.dataset.date);
-            } else renderTimeSlots(selectedDay.dataset.date);
-        }
+        };
+        planningBtn._clickHandler = btnHandler;
+        planningBtn.addEventListener('click', btnHandler);
     }
-
+    
+    // Загружаем слоты для выбранного дня (если есть)
+    var selectedDay = document.querySelector('.cal-day.selected');
+    if(selectedDay) {
+        loadSlotsForDate(selectedDay.dataset.date);
+    } else if(document.querySelector('.cal-day')) {
+        // Выбираем первый день, если ничего не выбрано
+        document.querySelector('.cal-day').click();
+    }
+}
     // ========== ОСНОВНОЙ РЕНДЕР ДАШБОРДА ==========
     function renderDashboard() {
         if (!currentUser) return;
@@ -1212,9 +1277,6 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
             activeTab = hash;
         } else {
             activeTab = 'cases';
-        }
-        if (currentUser) {
-            renderDashboard();
         }
     }
 
