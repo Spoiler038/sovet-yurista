@@ -410,7 +410,9 @@
                     newsArticles = data.newsArticles || [];
                     console.log('Новости:', newsArticles);
                     newsLinks = data.newsLinks || [];
-                    workHours = data.workHours || { start: "10:00", end: "18:00" };
+                    workHours = data.workHours || { start: "09:00", end: "18:00" };
+                    if (!/^\d{2}:\d{2}$/.test(workHours.start)) workHours.start = "09:00";
+                    if (!/^\d{2}:\d{2}$/.test(workHours.end)) workHours.end = "18:00";
                     currentRssUrl = data.rss_feed_url || '';
                     for(var a of newsArticles) a.dateShort = formatDate(a.date);
                     resolve();
@@ -595,8 +597,8 @@
             overlay.className = 'modal-overlay';
             overlay.innerHTML = `<div class="modal-container"><h3>Новое дело</h3>
                 <input id="newCaseTitle" placeholder="Название дела">
-                <input id="newClaimant" placeholder="Заявитель">
-                <input id="newDefendant" placeholder="Ответчик">
+                <select id="newClaimant"><option value="">Введите вручную</option>${userOptions}</select>
+                <input id="newDefendant"><option value="">Введите вручную</option>${userOptions}</select> placeholder="Ответчик">
                 <select id="newCategory"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select>
                 <div class="modal-buttons"><button id="createCaseBtn" class="btn">Создать</button><button id="cancelCaseBtn" class="btn-outline">Отмена</button></div></div>`;
             document.body.appendChild(overlay);
@@ -1004,7 +1006,21 @@
                 for (const c of allCases.filter(c => c.userId === currentUser.login)) caseOptions += `<option value="${c.id}">${escapeHtml(c.title)}</option>`;
                 html = `<h2>Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">${caseOptions}</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn btn-small">Загрузить</button></div><h3>Мои документы</h3><div id="userDocsList"></div>`;
             }
-        } else if (activeTab === 'admin' && isAdmin) {
+        } else if (activeTab === 'userSettings') {
+    html = `<h2><i class="fas fa-user-cog"></i> Настройки аккаунта</h2>
+    <div class="card">
+        <h3>Смена пароля</h3>
+        <input type="password" id="oldPassword" placeholder="Старый пароль">
+        <input type="password" id="newPassword" placeholder="Новый пароль">
+        <input type="password" id="newPasswordConfirm" placeholder="Подтвердите новый пароль">
+        <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
+    </div>
+    <div class="card">
+        <h3>Документы</h3>
+        <button id="downloadAgreementBtn" class="btn-outline btn-small">Скачать пользовательское соглашение (PDF)</button>
+        <button id="downloadPrivacyBtn" class="btn-outline btn-small">Скачать политику конфиденциальности (PDF)</button>
+    </div>`;
+} else if (activeTab === 'admin' && isAdmin) {
             html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
             <div class="card">
                 <h3>Часы работы</h3>
@@ -1057,7 +1073,8 @@
         var tabs = [
             {id:'cases', icon:'fas fa-gavel', label:'Дела'},
             {id:'calendar', icon:'fas fa-calendar-alt', label:'Календарь'},
-            {id:'documents', icon:'fas fa-file-alt', label:'Документы'}
+            {id:'documents', icon:'fas fa-file-alt', label:'Документы'},
+            {id:'userSettings', icon:'fas fa-user-cog', label:'Настройки'}
         ];
         if(isAdmin) tabs.push({id:'admin', icon:'fas fa-user-shield', label:'Настройки'});
         var navHtml = '';
