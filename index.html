@@ -623,7 +623,10 @@
         });
     }
 
+    let eventsAttached = false;
     function attachDynamicEvents() {
+    if (eventsAttached) return;
+        eventsAttached = true;
         document.getElementById('uploadDocBtn')?.addEventListener('click', function() {
             var file = document.getElementById('docFileInput').files[0];
             var caseId = document.getElementById('docCaseSelect')?.value;
@@ -760,13 +763,39 @@
             });
         });
 
-        document.getElementById('downloadAgreementBtn')?.addEventListener('click', function() {
-            window.open('https://spoiler038.github.io/sovet-yurista/docs/user-agreement.pdf', '_blank');
-        });
-        
-        document.getElementById('downloadPrivacyBtn')?.addEventListener('click', function() {
-            window.open('https://spoiler038.github.io/sovet-yurista/docs/privacy-policy.pdf', '_blank');
-        });
+        // В attachDynamicEvents() замените:
+document.getElementById('downloadAgreementBtn')?.addEventListener('click', function() {
+    callGas('generateDocument', { 
+        docType: 'agreement', 
+        deviceId: localStorage.getItem('deviceId') 
+    }, (res) => {
+        if (res && res.success) {
+            showToast("Документ сгенерирован и сохранён в вашей папке");
+            // Обновляем список документов
+            syncDataFromServer().then(() => {
+                if (activeTab === 'documents') renderDashboard();
+            });
+        } else {
+            showToast("Ошибка генерации документа: " + (res.error || "неизвестно"), true);
+        }
+    });
+});
+
+document.getElementById('downloadPrivacyBtn')?.addEventListener('click', function() {
+    callGas('generateDocument', { 
+        docType: 'privacy', 
+        deviceId: localStorage.getItem('deviceId') 
+    }, (res) => {
+        if (res && res.success) {
+            showToast("Документ сгенерирован и сохранён в вашей папке");
+            syncDataFromServer().then(() => {
+                if (activeTab === 'documents') renderDashboard();
+            });
+        } else {
+            showToast("Ошибка генерации документа: " + (res.error || "неизвестно"), true);
+        }
+    });
+});
     }
 
     function renderCalendarUI() {
@@ -802,7 +831,11 @@
             });
         }
         
-        function renderTimeSlots(date) {
+       function renderTimeSlots(date) {
+    if (!workHours || !workHours.start || !workHours.end) {
+        console.warn('workHours не загружены');
+        return;
+    }
             var slots = [];
             var s = parseInt(workHours.start.split(':')[0]);
             var e = parseInt(workHours.end.split(':')[0]);
