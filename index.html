@@ -35,7 +35,6 @@
         }
         .app-container > * { position: relative; z-index: 1; }
         
-        /* Контейнер новостей с ограничением высоты 25% от экрана и прокруткой */
         .news-container { 
             overflow-x: hidden; 
             overflow-y: auto;
@@ -83,24 +82,9 @@
             100% { opacity: 1; transform: translateX(0); }
         }
         
-        .news-title {
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 6px;
-            line-height: 1.4;
-        }
-        .news-date {
-            font-size: 10px;
-            color: #FAC643;
-            opacity: 0.8;
-            margin-bottom: 6px;
-            display: block;
-        }
-        .news-summary {
-            font-size: 12px;
-            opacity: 0.8;
-            line-height: 1.4;
-        }
+        .news-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; line-height: 1.4; }
+        .news-date { font-size: 10px; color: #FAC643; opacity: 0.8; margin-bottom: 6px; display: block; }
+        .news-summary { font-size: 12px; opacity: 0.8; line-height: 1.4; }
         
         .dashboard-header {
             display: flex;
@@ -164,47 +148,30 @@
         .case-item { background: #25262B; border-radius: 24px; padding: 18px; margin-bottom: 14px; cursor: pointer; transition: 0.1s; }
         .status-badge { background: #FAC64320; color: #FAC643; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; display: inline-block; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .flex-row {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            flex-wrap: nowrap;
-            gap: 8px;
-        }
-        .flex-col {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .flex-row input,
-        .flex-row button,
-        .flex-row span {
-            flex: 0 0 auto;
-        }
-        .flex-row input[type="time"],
-        .flex-row input[type="text"] {
-            flex: 1;
-        }
+        .flex-row { display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 8px; }
+        .flex-col { display: flex; flex-direction: column; gap: 8px; }
+        .flex-row input, .flex-row button, .flex-row span { flex: 0 0 auto; }
+        .flex-row input[type="time"], .flex-row input[type="text"] { flex: 1; }
         .tabs { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #3D3E45; }
         .tab { padding: 8px 16px; cursor: pointer; color: #aaa; font-weight: 500; border-bottom: 2px solid transparent; }
         .tab.active { color: #FAC643; border-bottom-color: #FAC643; }
         hr { border-color: #3D3E45; margin: 16px 0; }
         .toast-msg {
-    position: fixed;
-    top: calc(env(safe-area-inset-top) + 20px);
-    left: 20px;
-    right: 20px;
-    max-width: 560px;
-    margin: 0 auto;
-    background: #2E2F35E6;
-    backdrop-filter: blur(12px);
-    padding: 12px 20px;
-    border-radius: 60px;
-    text-align: center;
-    z-index: 1100;
-    border-left: 5px solid #FAC643;
-    width: auto;
-}
+            position: fixed;
+            top: calc(env(safe-area-inset-top) + 20px);
+            left: 20px;
+            right: 20px;
+            max-width: 560px;
+            margin: 0 auto;
+            background: #2E2F35E6;
+            backdrop-filter: blur(12px);
+            padding: 12px 20px;
+            border-radius: 60px;
+            text-align: center;
+            z-index: 1100;
+            border-left: 5px solid #FAC643;
+            width: auto;
+        }
         .hidden { display: none !important; }
         .legal-text-content { white-space: pre-wrap; font-size: 12px; background: #1a1a1e; padding: 16px; border-radius: 20px; margin: 12px 0; max-height: 400px; overflow-y: auto; }
         .logo-icon { width: 96px; height: 96px; object-fit: contain; background: transparent; }
@@ -230,11 +197,7 @@
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; justify-content: center; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .flex-row input,
-.flex-row select,
-.flex-row textarea {
-    margin-bottom: 0;
-}
+        .flex-row input, .flex-row select, .flex-row textarea { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -252,13 +215,13 @@
             <input type="text" id="loginUsername" placeholder="Логин">
             <input type="password" id="loginPassword" placeholder="Пароль">
             <div class="consent-checkbox">
-    <input type="checkbox" id="consentCheckbox">
-    <span style="margin-left: 8px;">Я ознакомлен и согласен с 
-        <span class="consent-link" data-doc="personal-data-consent">условиями обработки ПД</span>, 
-        <span class="consent-link" data-doc="privacy-policy">политикой конфиденциальности</span> и 
-        <span class="consent-link" data-doc="user-agreement">пользовательским соглашением</span>
-    </span>
-</div>
+                <input type="checkbox" id="consentCheckbox">
+                <span style="margin-left: 8px;">Я ознакомлен и согласен с 
+                    <span class="consent-link" data-doc="personal-data-consent">условиями обработки ПД</span>, 
+                    <span class="consent-link" data-doc="privacy-policy">политикой конфиденциальности</span> и 
+                    <span class="consent-link" data-doc="user-agreement">пользовательским соглашением</span>
+                </span>
+            </div>
             <button id="doLoginBtn" class="btn" style="width:100%" disabled><i class="fas fa-arrow-right-to-bracket"></i> Войти</button>
             <div style="margin-top: 12px; text-align: center;">
                 <span id="showRegisterBtn" style="cursor:pointer; color:#FAC643; text-decoration:underline;">Зарегистрироваться</span>
@@ -324,7 +287,6 @@
     
     function formatDate(dateStr) {
         if (!dateStr) return '';
-        // Преобразуем YYYY-MM-DD в DD.MM.YY
         var parts = dateStr.split('-');
         if (parts.length === 3) {
             return parts[2] + '.' + parts[1] + '.' + parts[0].slice(2);
@@ -350,6 +312,7 @@
         document.body.appendChild(toast);
         setTimeout(function() { toast.remove(); }, 2500);
     }
+    
     function showModal(options) {
         var overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -363,6 +326,7 @@
         if(cancelBtn) cancelBtn.onclick = function() { if(options.onCancel) options.onCancel(); close(); };
         overlay.onclick = function(e) { if(e.target === overlay) close(); };
     }
+    
     async function loadDocumentContent(docName) {
         const baseUrl = 'https://spoiler038.github.io/sovet-yurista/';
         try {
@@ -373,6 +337,7 @@
             return '[Документ "' + docName + '.txt" не найден]';
         }
     }
+    
     function showDocumentModal(title, content) {
         var overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -398,8 +363,9 @@
         script.src = url;
         document.body.appendChild(script);
     }
+    
     function syncDataFromServer() {
-    return new Promise((resolve) => {
+        return new Promise((resolve) => {
             callGas('getAllData', { deviceId: localStorage.getItem('deviceId') || '' }, (data) => {
                 console.log('getAllData ответ:', data);
                 if (data && data.success) {
@@ -446,6 +412,7 @@
         };
         callGas('saveAllData', payload, (res) => { console.log('Saved', res); });
     }
+    
     function persistCurrentUser() {
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         if(currentUser && currentUser.deviceId) {
@@ -473,21 +440,21 @@
 
     // ========== ФУНКЦИИ РЕНДЕРИНГА ==========
     function renderNewsOnLogin() {
-    var container = document.getElementById('newsFeed');
-    if (container) {
-        var html = '';
-        if (newsArticles.length === 0) {
-            html = '<div class="news-item" style="opacity:1; transform:none;"><div class="news-title">📢 Скоро здесь будут свежие новости</div><div class="news-summary">Новости загружаются. Если их нет долго — проверьте настройки RSS или таблицу.</div></div>';
-        } else {
-            for (var i = 0; i < newsArticles.length; i++) {
-                var displayDate = newsArticles[i].dateShort || newsArticles[i].date || '';
-                html += '<div class="news-item" data-url="' + (newsArticles[i].url || '') + '">' +
-                    '<div class="news-title">' + escapeHtml(newsArticles[i].title) + '</div>' +
-                    '<div class="news-date">' + escapeHtml(displayDate) + '</div>' +
-                    '<div class="news-summary">' + escapeHtml(newsArticles[i].summary) + '</div>' +
-                '</div>';
+        var container = document.getElementById('newsFeed');
+        if (container) {
+            var html = '';
+            if (newsArticles.length === 0) {
+                html = '<div class="news-item" style="opacity:1; transform:none;"><div class="news-title">📢 Скоро здесь будут свежие новости</div><div class="news-summary">Новости загружаются. Если их нет долго — проверьте настройки RSS или таблицу.</div></div>';
+            } else {
+                for (var i = 0; i < newsArticles.length; i++) {
+                    var displayDate = newsArticles[i].dateShort || newsArticles[i].date || '';
+                    html += '<div class="news-item" data-url="' + (newsArticles[i].url || '') + '">' +
+                        '<div class="news-title">' + escapeHtml(newsArticles[i].title) + '</div>' +
+                        '<div class="news-date">' + escapeHtml(displayDate) + '</div>' +
+                        '<div class="news-summary">' + escapeHtml(newsArticles[i].summary) + '</div>' +
+                    '</div>';
+                }
             }
-        }
             container.innerHTML = html;
             document.querySelectorAll('.news-item').forEach(item => {
                 item.addEventListener('click', function() {
@@ -555,6 +522,11 @@
         });
     }
 
+    function getUserOptions() {
+        if (!allUsers || allUsers.length === 0) return '';
+        return allUsers.map(user => `<option value="${escapeHtml(user.login)}">${escapeHtml(user.fullName || user.login)}</option>`).join('');
+    }
+
     function attachCaseEvents() {
         document.querySelectorAll('.update-case-btn').forEach(btn => {
             btn.onclick = function() {
@@ -575,6 +547,7 @@
                 }
             };
         });
+        
         document.querySelectorAll('.view-detail-btn').forEach(btn => {
             btn.onclick = function() {
                 var id = parseInt(this.dataset.id);
@@ -582,7 +555,9 @@
                 renderDashboard();
             };
         });
+        
         document.getElementById('backToArchiveBtn')?.addEventListener('click', () => { selectedArchiveCase = null; renderDashboard(); });
+        
         document.getElementById('restoreCaseBtn')?.addEventListener('click', () => {
             if(selectedArchiveCase) {
                 selectedArchiveCase.status = "В процессе";
@@ -594,41 +569,38 @@
                 showToast("Дело возвращено в работу");
             }
         });
+        
         document.getElementById('addCaseBtn')?.addEventListener('click', () => {
-    var userOptionsHtml = getUserOptions();
-    var overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.innerHTML = `<div class="modal-container"><h3>Новое дело</h3>
-        <input id="newCaseTitle" placeholder="Название дела">
-        <select id="newClaimant" style="margin-bottom:12px;"><option value="">Выберите или введите заявителя</option>${userOptionsHtml}</select>
-        <select id="newDefendant" style="margin-bottom:12px;"><option value="">Выберите или введите ответчика</option>${userOptionsHtml}</select>
-        <select id="newCategory"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select>
-        <div class="modal-buttons"><button id="createCaseBtn" class="btn">Создать</button><button id="cancelCaseBtn" class="btn-outline">Отмена</button></div></div>`;
-    document.body.appendChild(overlay);
-    document.getElementById('createCaseBtn').onclick = function() {
-        var newId = Date.now();
-        var claimantVal = document.getElementById('newClaimant').value;
-        var defendantVal = document.getElementById('newDefendant').value;
-        allCases.push({
-            id: newId, userId: "admin", title: document.getElementById('newCaseTitle').value,
-            status: "В процессе", stage: "Новое", progress: 0, result: null, history: [],
-            claimant: claimantVal,
-            defendant: defendantVal,
-            category: document.getElementById('newCategory').value
+            var userOptionsHtml = getUserOptions();
+            var overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `<div class="modal-container"><h3>Новое дело</h3>
+                <input id="newCaseTitle" placeholder="Название дела">
+                <select id="newClaimant" style="margin-bottom:12px;"><option value="">Выберите или введите заявителя</option>${userOptionsHtml}</select>
+                <select id="newDefendant" style="margin-bottom:12px;"><option value="">Выберите или введите ответчика</option>${userOptionsHtml}</select>
+                <select id="newCategory"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select>
+                <div class="modal-buttons"><button id="createCaseBtn" class="btn">Создать</button><button id="cancelCaseBtn" class="btn-outline">Отмена</button></div></div>`;
+            document.body.appendChild(overlay);
+            
+            document.getElementById('createCaseBtn').onclick = function() {
+                var newId = Date.now();
+                var claimantVal = document.getElementById('newClaimant').value;
+                var defendantVal = document.getElementById('newDefendant').value;
+                allCases.push({
+                    id: newId, userId: "admin", title: document.getElementById('newCaseTitle').value,
+                    status: "В процессе", stage: "Новое", progress: 0, result: null, history: [],
+                    claimant: claimantVal,
+                    defendant: defendantVal,
+                    category: document.getElementById('newCategory').value
+                });
+                saveToServer();
+                overlay.remove();
+                renderDashboard();
+                showToast("Дело добавлено");
+            };
+            document.getElementById('cancelCaseBtn').onclick = function() { overlay.remove(); };
         });
-        saveToServer();
-        overlay.remove();
-        renderDashboard();
-        showToast("Дело добавлено");
-    };
-    document.getElementById('cancelCaseBtn').onclick = function() { overlay.remove(); };
-    });
-}
-    
-    function getUserOptions() {
-    if (!allUsers || allUsers.length === 0) return '';
-    return allUsers.map(user => `<option value="${escapeHtml(user.login)}">${escapeHtml(user.fullName || user.login)}</option>`).join('');
-}
+    }
 
     function attachDocAdminEvents() {
         document.querySelectorAll('.attach-doc-btn').forEach(btn => {
@@ -692,6 +664,7 @@
                     }
                 } else showToast("Выберите время", true);
             });
+            
             var myApps = allAppointments.filter(a => a.userId === currentUser.login);
             var listDiv = document.getElementById('myAppointmentsList');
             if(listDiv) listDiv.innerHTML = myApps.map(a => `<div class="card"><i class="fas fa-clock"></i> ${a.date} ${a.time} — ${a.status==='pending'?'⏳ ожидает':'✅ подтверждён'}</div>`).join('');
@@ -758,39 +731,37 @@
             });
         });
 
-        // Смена пароля (для обычного пользователя)
-document.getElementById('changePasswordBtn')?.addEventListener('click', function() {
-    var oldPass = document.getElementById('oldPassword').value;
-    var newPass = document.getElementById('newPassword').value;
-    var newPassConfirm = document.getElementById('newPasswordConfirm').value;
-    if (!oldPass || !newPass) {
-        showToast("Заполните старый и новый пароль", true);
-        return;
-    }
-    if (newPass !== newPassConfirm) {
-        showToast("Новый пароль и подтверждение не совпадают", true);
-        return;
-    }
-    callGas('changePassword', { userId: currentUser.id, oldPassword: oldPass, newPassword: newPass, deviceId: localStorage.getItem('deviceId') }, (res) => {
-        if (res && res.success) {
-            showToast("Пароль успешно изменён");
-            document.getElementById('oldPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('newPasswordConfirm').value = '';
-        } else {
-            showToast("Ошибка: " + (res.error || "неверный старый пароль"), true);
-        }
-    });
-});
+        document.getElementById('changePasswordBtn')?.addEventListener('click', function() {
+            var oldPass = document.getElementById('oldPassword').value;
+            var newPass = document.getElementById('newPassword').value;
+            var newPassConfirm = document.getElementById('newPasswordConfirm').value;
+            if (!oldPass || !newPass) {
+                showToast("Заполните старый и новый пароль", true);
+                return;
+            }
+            if (newPass !== newPassConfirm) {
+                showToast("Новый пароль и подтверждение не совпадают", true);
+                return;
+            }
+            callGas('changePassword', { userId: currentUser.id, oldPassword: oldPass, newPassword: newPass, deviceId: localStorage.getItem('deviceId') }, (res) => {
+                if (res && res.success) {
+                    showToast("Пароль успешно изменён");
+                    document.getElementById('oldPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('newPasswordConfirm').value = '';
+                } else {
+                    showToast("Ошибка: " + (res.error || "неверный старый пароль"), true);
+                }
+            });
+        });
 
-// Скачивание документов (PDF)
-document.getElementById('downloadAgreementBtn')?.addEventListener('click', function() {
-    // Вариант 1: ссылка на готовый PDF на сервере
-    window.open('https://spoiler038.github.io/sovet-yurista/docs/user-agreement.pdf', '_blank');
-});
-document.getElementById('downloadPrivacyBtn')?.addEventListener('click', function() {
-    window.open('https://spoiler038.github.io/sovet-yurista/docs/privacy-policy.pdf', '_blank');
-});
+        document.getElementById('downloadAgreementBtn')?.addEventListener('click', function() {
+            window.open('https://spoiler038.github.io/sovet-yurista/docs/user-agreement.pdf', '_blank');
+        });
+        
+        document.getElementById('downloadPrivacyBtn')?.addEventListener('click', function() {
+            window.open('https://spoiler038.github.io/sovet-yurista/docs/privacy-policy.pdf', '_blank');
+        });
     }
 
     function renderCalendarUI() {
@@ -810,6 +781,7 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
         calHtml += '</div>';
         document.getElementById('simpleCalendar').innerHTML = calHtml;
         var selectedDate = null;
+        
         function showAppointmentsForDate(date) {
             var apps = allAppointments.filter(a => a.date === date);
             var listDiv = document.getElementById('timeSlotsArea');
@@ -824,6 +796,7 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
                 };
             });
         }
+        
         function renderTimeSlots(date) {
             var slots = [];
             var s = parseInt(workHours.start.split(':')[0]);
@@ -841,37 +814,33 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
             timesDiv.innerHTML = slotsHtml;
             if(currentUser.role !== 'admin') {
                 document.querySelectorAll('.slot.free').forEach(slot => {
-                    slot.onclick = function() {
+                    slot.onclick = function(e) {
+                        e.stopPropagation();
+                        // Снимаем выделение со всех слотов
+                        document.querySelectorAll('.slot.free').forEach(s => {
+                            s.style.border = '';
+                            s.style.transform = '';
+                        });
                         window.selectedSlot = { date: date, time: this.dataset.time };
                         this.style.border = '2px solid #FAC643';
+                        this.style.transform = 'scale(1.02)';
                     };
                 });
             }
         }
+        
         function showPlanningPanel(date) {
             var panel = document.getElementById('timeSlotsArea');
             panel.innerHTML = '<div><h4>Блокировка периодов на ' + date + '</h4><div class="flex-row"><input type="time" id="blockStart" placeholder="Начало"><input type="time" id="blockEnd" placeholder="Конец"><button id="addBlockPeriodBtn" class="btn btn-small">+</button></div><div id="blockedPeriodsList"></div></div>';
             
             var blockStart = document.getElementById('blockStart');
             var blockEnd = document.getElementById('blockEnd');
-            var addButton = document.getElementById('addBlockPeriodBtn');
-            
-            if (blockStart) {
-                blockStart.addEventListener('click', function(e) { e.stopPropagation(); });
-                blockStart.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-            }
-            if (blockEnd) {
-                blockEnd.addEventListener('click', function(e) { e.stopPropagation(); });
-                blockEnd.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-            }
-            if (addButton) {
-                addButton.addEventListener('click', function(e) { e.stopPropagation(); });
-            }
             
             renderBlockedPeriods(date);
             
             document.getElementById('addBlockPeriodBtn').onclick = function(e) {
                 e.stopPropagation();
+                e.preventDefault();
                 var start = document.getElementById('blockStart').value;
                 var end = document.getElementById('blockEnd').value;
                 if(start && end) {
@@ -879,27 +848,38 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
                     saveToServer();
                     renderBlockedPeriods(date);
                     showToast("Период заблокирован");
+                    document.getElementById('blockStart').value = '';
+                    document.getElementById('blockEnd').value = '';
                 } else showToast("Выберите время", true);
             };
         }
+        
         function renderBlockedPeriods(date) {
             var periods = blockedSlots.filter(b => b.date === date);
             var listDiv = document.getElementById('blockedPeriodsList');
             if(listDiv) {
                 listDiv.innerHTML = periods.map((p, idx) => '<div class="flex-between"><span>' + p.timeStart + ' — ' + p.timeEnd + '</span><div><button class="btn-outline btn-small edit-period" data-idx="' + idx + '"><i class="fas fa-pencil-alt"></i></button><button class="btn-outline btn-small del-period" data-idx="' + idx + '"><i class="fas fa-trash-alt"></i></button></div></div>').join('');
                 document.querySelectorAll('.del-period').forEach(btn => {
-                    btn.onclick = function() {
+                    btn.onclick = function(e) {
+                        e.stopPropagation();
                         var idx = parseInt(this.dataset.idx);
-                        blockedSlots = blockedSlots.filter((_,i) => !(blockedSlots[i].date === date && i === idx));
-                        saveToServer();
-                        renderBlockedPeriods(date);
-                        showToast("Период удалён");
+                        var periodToRemove = blockedSlots.filter((p,i) => p.date === date)[idx];
+                        if(periodToRemove) {
+                            var indexToRemove = blockedSlots.findIndex(p => p.date === date && p.timeStart === periodToRemove.timeStart && p.timeEnd === periodToRemove.timeEnd);
+                            if(indexToRemove !== -1) {
+                                blockedSlots.splice(indexToRemove, 1);
+                                saveToServer();
+                                renderBlockedPeriods(date);
+                                showToast("Период удалён");
+                            }
+                        }
                     };
                 });
                 document.querySelectorAll('.edit-period').forEach(btn => {
-                    btn.onclick = function() {
+                    btn.onclick = function(e) {
+                        e.stopPropagation();
                         var idx = parseInt(this.dataset.idx);
-                        var period = blockedSlots.find((p,i) => i === idx && p.date === date);
+                        var period = blockedSlots.filter((p,i) => p.date === date)[idx];
                         if(period) {
                             var newStart = prompt("Новое время начала", period.timeStart);
                             var newEnd = prompt("Новое время окончания", period.timeEnd);
@@ -915,6 +895,7 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
                 });
             }
         }
+        
         document.querySelectorAll('.cal-day').forEach(el => {
             el.onclick = function(e) {
                 if (e.target.closest('#timeSlotsArea') && planningMode) {
@@ -931,6 +912,7 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
                 }
             };
         });
+        
         document.getElementById('planningToggleBtn')?.addEventListener('click', function() {
             planningMode = !planningMode;
             this.innerHTML = planningMode ? '<i class="fas fa-calendar-day"></i> Обычный режим' : '<i class="fas fa-calendar-plus"></i> Планирование';
@@ -939,8 +921,11 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
                 if(planningMode) showPlanningPanel(selectedDay.dataset.date);
                 else if(currentUser.role === 'admin') showAppointmentsForDate(selectedDay.dataset.date);
                 else renderTimeSlots(selectedDay.dataset.date);
+            } else if(selectedDay === null && document.querySelector('.cal-day')) {
+                document.querySelector('.cal-day').click();
             }
         });
+        
         var selectedDay = document.querySelector('.cal-day.selected');
         if(selectedDay) {
             if(currentUser.role === 'admin') {
@@ -1051,20 +1036,20 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
                 html = `<h2>Документы</h2><div class="card"><h3>Загрузить документ</h3><select id="docCaseSelect">${caseOptions}</select><input type="file" id="docFileInput"><button id="uploadDocBtn" class="btn btn-small">Загрузить</button></div><h3>Мои документы</h3><div id="userDocsList"></div>`;
             }
         } else if (activeTab === 'userSettings') {
-    html = `<h2><i class="fas fa-user-cog"></i> Настройки аккаунта</h2>
-    <div class="card">
-        <h3>Смена пароля</h3>
-        <input type="password" id="oldPassword" placeholder="Старый пароль">
-        <input type="password" id="newPassword" placeholder="Новый пароль">
-        <input type="password" id="newPasswordConfirm" placeholder="Подтвердите новый пароль">
-        <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
-    </div>
-    <div class="card">
-        <h3>Документы</h3>
-        <button id="downloadAgreementBtn" class="btn-outline btn-small">Скачать пользовательское соглашение (PDF)</button>
-        <button id="downloadPrivacyBtn" class="btn-outline btn-small">Скачать политику конфиденциальности (PDF)</button>
-    </div>`;
-} else if (activeTab === 'admin' && isAdmin) {
+            html = `<h2><i class="fas fa-user-cog"></i> Настройки аккаунта</h2>
+            <div class="card">
+                <h3>Смена пароля</h3>
+                <input type="password" id="oldPassword" placeholder="Старый пароль">
+                <input type="password" id="newPassword" placeholder="Новый пароль">
+                <input type="password" id="newPasswordConfirm" placeholder="Подтвердите новый пароль">
+                <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
+            </div>
+            <div class="card">
+                <h3>Документы</h3>
+                <button id="downloadAgreementBtn" class="btn-outline btn-small">Скачать пользовательское соглашение (PDF)</button>
+                <button id="downloadPrivacyBtn" class="btn-outline btn-small">Скачать политику конфиденциальности (PDF)</button>
+            </div>`;
+        } else if (activeTab === 'admin' && isAdmin) {
             html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
             <div class="card">
                 <h3>Часы работы</h3>
@@ -1112,92 +1097,86 @@ document.getElementById('downloadPrivacyBtn')?.addEventListener('click', functio
 
     // ========== НАВИГАЦИЯ ==========
     function buildBottomNav() {
-    var navDiv = document.getElementById('bottomNav');
-    var isAdmin = currentUser && currentUser.role === 'admin';
-    var tabs = [
-        { id: 'cases', icon: 'fas fa-gavel', label: 'Дела' },
-        { id: 'calendar', icon: 'fas fa-calendar-alt', label: 'Календарь' },
-        { id: 'documents', icon: 'fas fa-file-alt', label: 'Документы' }
-    ];
-    if (!isAdmin) {
-        tabs.push({ id: 'userSettings', icon: 'fas fa-user-cog', label: 'Настройки' });
-    } else {
-        tabs.push({ id: 'admin', icon: 'fas fa-user-shield', label: 'Настройки' });
-    }
-    var navHtml = '';
-    for (var t of tabs) {
-        var activeClass = (activeTab === t.id) ? 'active' : '';
-        navHtml += `<div class="nav-item ${activeClass}" data-tab="${t.id}"><i class="${t.icon}"></i><span>${t.label}</span></div>`;
-    }
-    navDiv.innerHTML = navHtml;
+        var navDiv = document.getElementById('bottomNav');
+        var isAdmin = currentUser && currentUser.role === 'admin';
+        var tabs = [
+            { id: 'cases', icon: 'fas fa-gavel', label: 'Дела' },
+            { id: 'calendar', icon: 'fas fa-calendar-alt', label: 'Календарь' },
+            { id: 'documents', icon: 'fas fa-file-alt', label: 'Документы' }
+        ];
+        if (!isAdmin) {
+            tabs.push({ id: 'userSettings', icon: 'fas fa-user-cog', label: 'Настройки' });
+        } else {
+            tabs.push({ id: 'admin', icon: 'fas fa-user-shield', label: 'Настройки' });
+        }
+        var navHtml = '';
+        for (var t of tabs) {
+            var activeClass = (activeTab === t.id) ? 'active' : '';
+            navHtml += `<div class="nav-item ${activeClass}" data-tab="${t.id}"><i class="${t.icon}"></i><span>${t.label}</span></div>`;
+        }
+        navDiv.innerHTML = navHtml;
 
-    // Клики по вкладкам
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.onclick = function() {
-            activeTab = this.dataset.tab;
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.onclick = function() {
+                activeTab = this.dataset.tab;
+                casesSubTab = 'current';
+                selectedArchiveCase = null;
+                planningMode = false;
+                renderDashboard();
+                history.pushState({ tab: activeTab }, '', '#' + activeTab);
+            };
+        });
+    }
+
+    // ========== НАСТРОЙКА НАВИГАЦИИ (один раз) ==========
+    function initNavigation() {
+        window.onpopstate = function(e) {
+            if (e.state && e.state.tab) {
+                activeTab = e.state.tab;
+            } else {
+                const hash = window.location.hash.slice(1);
+                if (hash && ['cases', 'calendar', 'documents', 'admin', 'userSettings'].includes(hash)) {
+                    activeTab = hash;
+                } else {
+                    activeTab = 'cases';
+                }
+            }
             casesSubTab = 'current';
             selectedArchiveCase = null;
             planningMode = false;
             renderDashboard();
-            history.pushState({ tab: activeTab }, '', '#' + activeTab);
         };
-    });
-}
 
-    // ========== НАСТРОЙКА НАВИГАЦИИ (один раз) ==========
-function initNavigation() {
-    // Обработчик кнопки "Назад" браузера (popstate)
-    window.onpopstate = function(e) {
-        if (e.state && e.state.tab) {
-            activeTab = e.state.tab;
-        } else {
-            // Если состояния нет – пробуем прочитать хэш
-            const hash = window.location.hash.slice(1);
-            if (hash && ['cases', 'calendar', 'documents', 'admin', 'userSettings'].includes(hash)) {
-                activeTab = hash;
-            } else {
-                activeTab = 'cases';
-            }
+        const dashboard = document.getElementById('appDashboard');
+        if (dashboard) {
+            let touchStart = 0;
+            dashboard.ontouchstart = function(e) {
+                touchStart = e.changedTouches[0].screenX;
+            };
+            dashboard.ontouchend = function(e) {
+                const diff = e.changedTouches[0].screenX - touchStart;
+                const isAdmin = currentUser && currentUser.role === 'admin';
+                const order = isAdmin
+                    ? ['cases', 'calendar', 'documents', 'admin']
+                    : ['cases', 'calendar', 'documents'];
+                const idx = order.indexOf(activeTab);
+                if (diff > 50 && idx > 0) activeTab = order[idx - 1];
+                if (diff < -50 && idx < order.length - 1) activeTab = order[idx + 1];
+                renderDashboard();
+                history.pushState({ tab: activeTab }, '', '#' + activeTab);
+            };
         }
-        casesSubTab = 'current';
-        selectedArchiveCase = null;
-        planningMode = false;
-        renderDashboard();
-    };
 
-    // Обработчики свайпов (горизонтальное перелистывание)
-    const dashboard = document.getElementById('appDashboard');
-    if (dashboard) {
-        let touchStart = 0;
-        dashboard.ontouchstart = function(e) {
-            touchStart = e.changedTouches[0].screenX;
-        };
-        dashboard.ontouchend = function(e) {
-            const diff = e.changedTouches[0].screenX - touchStart;
-            const isAdmin = currentUser && currentUser.role === 'admin';
-            const order = isAdmin
-                ? ['cases', 'calendar', 'documents', 'admin']
-                : ['cases', 'calendar', 'documents'];
-            const idx = order.indexOf(activeTab);
-            if (diff > 50 && idx > 0) activeTab = order[idx - 1];
-            if (diff < -50 && idx < order.length - 1) activeTab = order[idx + 1];
+        const hash = window.location.hash.slice(1);
+        if (hash && ['cases', 'calendar', 'documents', 'admin', 'userSettings'].includes(hash)) {
+            activeTab = hash;
+        } else {
+            activeTab = 'cases';
+        }
+        if (currentUser) {
             renderDashboard();
-            history.pushState({ tab: activeTab }, '', '#' + activeTab);
-        };
+        }
     }
-
-    // Инициализация активной вкладки из URL-хэша (если есть)
-    const hash = window.location.hash.slice(1);
-    if (hash && ['cases', 'calendar', 'documents', 'admin', 'userSettings'].includes(hash)) {
-        activeTab = hash;
-    } else {
-        activeTab = 'cases';
-    }
-    // Если пользователь уже авторизован – отрисовать дашборд с выбранной вкладкой
-    if (currentUser) {
-        renderDashboard();
-    }
-}
 
     // ========== ВХОД, ВЫХОД, РЕГИСТРАЦИЯ ==========
     function logout() {
@@ -1285,25 +1264,23 @@ function initNavigation() {
     }
 
     async function init() {
-    await syncDataFromServer();
-    renderNewsOnLogin();
-    setupConsent();
-    document.getElementById('doLoginBtn').onclick = handleLogin;
-    document.getElementById('logoutBtn')?.addEventListener('click', logout);
-    document.getElementById('addressCopy')?.addEventListener('click', function() { navigator.clipboard.writeText(this.innerText); showToast("Адрес скопирован"); });
-    document.getElementById('mapToggleBtn')?.addEventListener('click', function() { document.getElementById('mapContainer').classList.toggle('map-collapsed'); });
-    autoLogin();
-
-    // Вызов настройки навигации (один раз)
-    initNavigation();
-
-    if (currentUser) {
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('appDashboard').classList.remove('hidden');
-        buildBottomNav();
-        renderDashboard();
+        await syncDataFromServer();
+        renderNewsOnLogin();
+        setupConsent();
+        document.getElementById('doLoginBtn').onclick = handleLogin;
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+        document.getElementById('addressCopy')?.addEventListener('click', function() { navigator.clipboard.writeText(this.innerText); showToast("Адрес скопирован"); });
+        document.getElementById('mapToggleBtn')?.addEventListener('click', function() { document.getElementById('mapContainer').classList.toggle('map-collapsed'); });
+        autoLogin();
+        initNavigation();
+        if (currentUser) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appDashboard').classList.remove('hidden');
+            buildBottomNav();
+            renderDashboard();
+        }
     }
-}
+    
     init();
     if('serviceWorker' in navigator) navigator.serviceWorker.register('/sovet-yurista/sw.js').catch(e=>console.log);
 </script>
