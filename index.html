@@ -603,17 +603,69 @@ function attachDocAdminEvents(){
 function renderCalendarUI(){
     let today=new Date(), year=today.getFullYear(), month=today.getMonth();
     let dim=new Date(year,month+1,0).getDate();
-    // Отметим дни с записями
     let apptDates=new Set(allAppointments.map(a=>a.date));
     let html='<div class="cal-grid">'+['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div style="font-weight:700;text-align:center;font-size:11px;opacity:.6">${d}</div>`).join('');
     let off=new Date(year,month,1).getDay()-1; if(off<0) off=6;
     for(let i=0;i<off;i++) html+='<div></div>';
+    
+    let selectedDate = null;
+    // Находим сегодняшнюю дату в текущем месяце
+    let todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    
     for(let d=1;d<=dim;d++){
         let ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        html+=`<div class="cal-day${apptDates.has(ds)?' has-appt':''}" data-date="${ds}">${d}</div>`;
+        let isToday = (ds === todayStr);
+        html+=`<div class="cal-day${apptDates.has(ds)?' has-appt':''}${isToday?' selected':''}" data-date="${ds}">${d}</div>`;
+        if(isToday) selectedDate = ds;
     }
     html+='</div>';
     document.getElementById('simpleCalendar').innerHTML=html;
+
+    function loadDate(date){
+        if(currentUser.role==='admin'){
+            planningMode ? showPlanPanel(date) : showAdminAppts(date);
+        } else {
+            showClientSlots(date);
+        }
+    }
+
+    // ... остальные внутренние функции (showAdminAppts, showClientSlots, showPlanPanel, renderPeriods) остаются без изменений ...
+
+    // Клики по дням
+    document.querySelectorAll('.cal-day').forEach(el=>{
+        el.addEventListener('pointerdown',function(e){
+            e.stopPropagation();
+            document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+            this.classList.add('selected');
+            loadDate(this.dataset.date);
+        });
+    });
+
+    // Кнопка планирование / просмотр
+    let planBtn=document.getElementById('planningToggleBtn');
+    if(planBtn){
+        planBtn.onclick=function(){
+            planningMode=!planningMode;
+            this.innerHTML=planningMode
+                ?'<i class="fas fa-calendar-day"></i> Режим просмотра'
+                :'<i class="fas fa-calendar-plus"></i> Планирование';
+            let sel=document.querySelector('.cal-day.selected');
+            if(sel) loadDate(sel.dataset.date);
+        };
+        planBtn.innerHTML=planningMode
+            ?'<i class="fas fa-calendar-day"></i> Режим просмотра'
+            :'<i class="fas fa-calendar-plus"></i> Планирование';
+    }
+
+    // Загружаем слоты для выбранной даты (сегодня или первое число, если сегодня не в этом месяце)
+    let selectedDay = document.querySelector('.cal-day.selected');
+    if(selectedDay){
+        loadDate(selectedDay.dataset.date);
+    } else {
+        let firstDay=document.querySelector('.cal-day');
+        if(firstDay){ firstDay.classList.add('selected'); loadDate(firstDay.dataset.date); }
+    }
+}
 
     function loadDate(date){
         if(currentUser.role==='admin'){
@@ -699,66 +751,79 @@ function renderCalendarUI(){
 
     // ── Клиент: слоты ──
     function showClientSlots(date){
-        let s=parseInt((workHours.start||'09:00').split(':')[0]);
-        let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
-        let slots=[]; for(let h=s;h<e;h++) slots.push(String(h).padStart(2,'0')+':00');
-        let html=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
-        slots.forEach(t=>{
-            let bl=blockedSlots.some(b=>b.date===date&&b.timeStart<=t&&b.timeEnd>=t);
-            let bk=allAppointments.some(a=>a.date===date&&a.time===t);
-            html+=`<div class="slot ${bl||bk?'booked':'free'}" data-time="${t}">${t}${bl||bk?' ❌':' ✅'}</div>`;
+    let s=parseInt((workHours.start||'09:00').split(':')[0]);
+    let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
+    let slots=[]; for(let h=s;h<e;h++) slots.push(String(h).padStart(2,'0')+':00');
+    let html=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
+    slots.forEach(t=>{
+        let bl=blockedSlots.some(b=>b.date===date&&b.timeStart<=t&&b.timeEnd>=t);
+        let bk=allAppointments.some(a=>a.date===date&&a.time===t);
+        html+=`<div class="slot ${bl||bk?'booked':'free'}" data-time="${t}">${t}${bl||bk?' ❌':' ✅'}</div>`;
+    });
+    html+='</div></div>';
+    document.getElementById('timeSlotsArea').innerHTML=html;
+    
+    document.querySelectorAll('.slot.free').forEach(slot=>{
+        slot.addEventListener('pointerdown',e=>{
+            e.stopPropagation();
+            document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
+            window.selectedSlot={date,time:slot.dataset.time};
+            slot.style.border='2px solid #FAC643'; slot.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
+            showToast('Выбрано: '+slot.dataset.time);
         });
-        html+='</div></div>';
-        document.getElementById('timeSlotsArea').innerHTML=html;
-        document.querySelectorAll('.slot.free').forEach(slot=>{
-            slot.addEventListener('pointerdown',e=>{
-                e.stopPropagation();
-                document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
-                window.selectedSlot={date,time:slot.dataset.time};
-                slot.style.border='2px solid #FAC643'; slot.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
-                showToast('Выбрано: '+slot.dataset.time);
-            });
-        });
-    }
+    });
+}
 
     // ── Планирование ──
     function showPlanPanel(date){
-        let area=document.getElementById('timeSlotsArea');
-        area.innerHTML=`<div>
-            <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
-            <div class="block-time-row">
-                <input type="time" id="bStart" class="time-input-safe" placeholder="Начало">
-                <span style="opacity:.5">—</span>
-                <input type="time" id="bEnd" class="time-input-safe" placeholder="Конец">
-                <button id="bAddBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
-            </div>
-            <div id="bList"></div>
-        </div>`;
+    let area=document.getElementById('timeSlotsArea');
+    area.innerHTML=`<div>
+        <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
+        <div class="block-time-row">
+            <input type="time" id="bStart" class="time-input-safe" placeholder="Начало">
+            <span style="opacity:.5">—</span>
+            <input type="time" id="bEnd" class="time-input-safe" placeholder="Конец">
+            <button id="bAddBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
+        </div>
+        <div id="bList"></div>
+    </div>`;
 
-        // ── Ключевой фикс: stopPropagation + preventDefault на pointerdown ──
-        // предотвращаем потерю фокуса при клике мышью/тапе на соседний input
-        ['bStart','bEnd'].forEach(id=>{
-            let el=area.querySelector('#'+id);
+    // Предотвращаем всплытие для полей ввода
+    ['bStart','bEnd'].forEach(id=>{
+        let el=area.querySelector('#'+id);
+        if(el){
             el.addEventListener('pointerdown', e=>e.stopPropagation());
-            el.addEventListener('mousedown',   e=>e.stopPropagation());
-            el.addEventListener('touchstart',  e=>e.stopPropagation(), {passive:true});
-        });
+            el.addEventListener('mousedown', e=>e.stopPropagation());
+            el.addEventListener('touchstart', e=>e.stopPropagation(), {passive:false});
+            el.addEventListener('click', e=>e.stopPropagation());
+        }
+    });
 
-        renderPeriods(date);
+    renderPeriods(date);
 
-        area.querySelector('#bAddBtn').addEventListener('pointerup',e=>{
-            e.preventDefault(); e.stopPropagation();
+    let addBtn = area.querySelector('#bAddBtn');
+    if(addBtn){
+        // Удаляем старый обработчик, если есть
+        let oldHandler = addBtn._handler;
+        if(oldHandler) addBtn.removeEventListener('click', oldHandler);
+        
+        let handler = function(e){
+            e.preventDefault();
+            e.stopPropagation();
             let s=area.querySelector('#bStart').value;
             let en=area.querySelector('#bEnd').value;
             if(!s||!en){ showToast('Выберите время',true); return; }
             blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
-            saveToServer(); renderPeriods(date);
+            saveToServer(); 
+            renderPeriods(date);
             area.querySelector('#bStart').value='';
             area.querySelector('#bEnd').value='';
             showToast('Период заблокирован');
-        });
+        };
+        addBtn._handler = handler;
+        addBtn.addEventListener('click', handler);
     }
-
+}
     function renderPeriods(date){
         let list=document.getElementById('bList'); if(!list) return;
         let periods=blockedSlots.filter(b=>b.date===date);
@@ -849,6 +914,7 @@ function renderCalendarUI(){
 // ============================================================
 function renderDashboard(){
     if(!currentUser) return;
+    if(typeof currentRssUrl === 'undefined' || currentRssUrl === null) currentRssUrl = '';
     document.getElementById('userAvatar').textContent=currentUser.login.charAt(0).toUpperCase();
     document.getElementById('userName').textContent=currentUser.login==='admin'?'Администратор':currentUser.login;
     document.getElementById('userRole').textContent=currentUser.role==='admin'?'Администратор':'Клиент';
@@ -1112,39 +1178,47 @@ function attachDynamicEvents(){
     });
 
     // Запись клиента на приём
-    if(activeTab==='calendar'&&currentUser.role!=='admin'){
-        let myApps=allAppointments.filter(a=>a.userId===currentUser.login);
-        let ld=document.getElementById('myAppointmentsList');
-        if(ld) ld.innerHTML=myApps.length
-            ? myApps.map(a=>`<div class="card"><i class="fas fa-clock"></i> ${a.date} ${a.time} — ${a.status==='pending'?'⏳ ожидает':'✅ подтверждён'}</div>`).join('')
-            : '<p style="opacity:.5">Нет записей</p>';
+    // Запись клиента на приём
+if(activeTab==='calendar'&&currentUser.role!=='admin'){
+    let myApps=allAppointments.filter(a=>a.userId===currentUser.login);
+    let ld=document.getElementById('myAppointmentsList');
+    if(ld) ld.innerHTML=myApps.length
+        ? myApps.map(a=>`<div class="card"><i class="fas fa-clock"></i> ${a.date} ${a.time} — ${a.status==='pending'?'⏳ ожидает':'✅ подтверждён'}</div>`).join('')
+        : '<p style="opacity:.5">Нет записей</p>';
 
-        document.getElementById('bookSlotBtn')?.addEventListener('click',()=>{
-            if(!window.selectedSlot){ showToast('Выберите время',true); return; }
-            let {date,time}=window.selectedSlot;
-            if(allAppointments.some(a=>a.date===date&&a.time===time&&a.userId===currentUser.login)){ showToast('Вы уже записаны',true); return; }
-            if(blockedSlots.some(b=>b.date===date&&b.timeStart<=time&&b.timeEnd>=time)){ showToast('Слот занят',true); return; }
-            let ov=document.createElement('div'); ov.className='modal-overlay';
-            ov.innerHTML=`<div class="modal-container"><h3>Запись на приём</h3>
-                <input id="apTopic" placeholder="Тема обращения">
-                <input id="apPhone" placeholder="Телефон">
-                <div class="modal-buttons">
-                    <button id="apConfirm" class="btn">Записаться</button>
-                    <button id="apCancel"  class="btn-outline">Отмена</button>
-                </div></div>`;
-            document.body.appendChild(ov);
-            ov.querySelector('#apConfirm').onclick=()=>{
-                allAppointments.push({id:Date.now(),userId:currentUser.login,date,time,
-                    clientName:currentUser.login,topic:ov.querySelector('#apTopic').value,
-                    phone:normalizePhone(ov.querySelector('#apPhone').value),status:'pending'});
-                saveToServer(); ov.remove();
-                showModal({title:'Запись создана',message:`${date} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
-                renderDashboard();
-            };
-            ov.querySelector('#apCancel').onclick=()=>ov.remove();
-            ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
-        });
-    }
+    document.getElementById('bookSlotBtn')?.addEventListener('click',()=>{
+        if(!window.selectedSlot){ showToast('Выберите время',true); return; }
+        let {date,time}=window.selectedSlot;
+        if(allAppointments.some(a=>a.date===date&&a.time===time&&a.userId===currentUser.login)){ showToast('Вы уже записаны',true); return; }
+        if(blockedSlots.some(b=>b.date===date&&b.timeStart<=time&&b.timeEnd>=time)){ showToast('Слот занят',true); return; }
+        
+        let ov=document.createElement('div'); ov.className='modal-overlay';
+        ov.innerHTML=`<div class="modal-container"><h3>Запись на приём</h3>
+            <input id="apTopic" placeholder="Тема обращения">
+            <div class="modal-buttons">
+                <button id="apConfirm" class="btn">Записаться</button>
+                <button id="apCancel"  class="btn-outline">Отмена</button>
+            </div></div>`;
+        document.body.appendChild(ov);
+        ov.querySelector('#apConfirm').onclick=()=>{
+            allAppointments.push({
+                id:Date.now(),
+                userId:currentUser.login,
+                date,
+                time,
+                clientName:currentUser.login,
+                topic:ov.querySelector('#apTopic').value,
+                phone:currentUser.phone || '',  // используем телефон из данных пользователя
+                status:'pending'
+            });
+            saveToServer(); ov.remove();
+            showModal({title:'Запись создана',message:`${date} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
+            renderDashboard();
+        };
+        ov.querySelector('#apCancel').onclick=()=>ov.remove();
+        ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+    });
+}
 
     // Часы работы — фикс потери значения при pointer-событиях
     let ws=document.getElementById('workStart'), we=document.getElementById('workEnd');
