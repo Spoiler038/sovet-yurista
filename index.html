@@ -485,6 +485,23 @@ function renderNews(){
     });
 }
 
+    function forceLoadNewsFromSheet(){
+    showToast('Загрузка новостей из таблицы...');
+    callGas('forceLoadNews', {}, data => {
+        if(data && data.success && data.newsArticles){
+            newsArticles = data.newsArticles;
+            renderNews();
+            showToast('Загружено ' + newsArticles.length + ' новостей');
+            // Если админ на странице настроек, обновим отображение
+            if(activeTab === 'admin' && currentUser && currentUser.role === 'admin'){
+                renderDashboard();
+            }
+        } else {
+            showToast('Ошибка загрузки новостей', true);
+        }
+    });
+}
+
 // ============================================================
 //  COMBO FIELD
 // ============================================================
@@ -688,50 +705,93 @@ function renderCalendarUI(){
     }
 
     function showClientSlots(date){
-        let s=parseInt((workHours.start||'09:00').split(':')[0]);
-        let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
-        let slots=[]; for(let h=s;h<e;h++) slots.push(String(h).padStart(2,'0')+':00');
-        let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
-        slots.forEach(t=>{
-            let bl=blockedSlots.some(b=>b.date===date&&b.timeStart<=t&&b.timeEnd>=t);
-            let bk=allAppointments.some(a=>a.date===date&&a.time===t);
-            slotsHtml+=`<div class="slot ${bl||bk?'booked':'free'}" data-time="${t}">${t}${bl||bk?' ❌':' ✅'}</div>`;
-        });
-        slotsHtml+='</div></div>';
-        document.getElementById('timeSlotsArea').innerHTML=slotsHtml;
+    let s=parseInt((workHours.start||'09:00').split(':')[0]);
+    let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
+    let slots=[];
+    
+    // Генерируем слоты с интервалом 1 час, но с проверкой на заблокированные периоды
+    for(let h=s; h<e; h++){
+        let timeStart = String(h).padStart(2,'0') + ':00';
+        let timeEnd = String(h+1).padStart(2,'0') + ':00';
         
-        document.querySelectorAll('.slot.free').forEach(slot=>{
-            slot.addEventListener('pointerdown',e=>{
-                e.stopPropagation();
-                document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
-                window.selectedSlot={date,time:slot.dataset.time};
-                slot.style.border='2px solid #FAC643'; slot.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
-                showToast('Выбрано: '+slot.dataset.time);
-            });
+        // Проверяем, не заблокирован ли этот час
+        let isBlocked = blockedSlots.some(b => {
+            if(b.date !== date) return false;
+            // Если слот полностью входит в заблокированный период
+            return (timeStart >= b.timeStart && timeStart < b.timeEnd);
         });
+        
+        if(!isBlocked){
+            slots.push(timeStart);
+        }
     }
+    
+    let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
+    slots.forEach(t=>{
+        let bk=allAppointments.some(a=>a.date===date && a.time===t);
+        slotsHtml+=`<div class="slot ${bk?'booked':'free'}" data-time="${t}">${t} - ${(parseInt(t)+1)}:00 ${bk?'❌':'✅'}</div>`;
+    });
+    slotsHtml+='</div></div>';
+    document.getElementById('timeSlotsArea').innerHTML=slotsHtml;
+    
+    document.querySelectorAll('.slot.free').forEach(slot=>{
+        slot.addEventListener('click',function(e){
+            e.stopPropagation();
+            document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
+            window.selectedSlot={date,time:this.dataset.time};
+            this.style.border='2px solid #FAC643'; 
+            this.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
+            showToast('Выбрано: '+this.dataset.time);
+        });
+    });
+}
 
     function showPlanPanel(date){
-        let area=document.getElementById('timeSlotsArea');
-        area.innerHTML=`<div>
-            <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
-            <div class="block-time-row">
-                <input type="time" id="bStart" class="time-input-safe" placeholder="Начало">
-                <span style="opacity:.5">—</span>
-                <input type="time" id="bEnd" class="time-input-safe" placeholder="Конец">
-                <button id="bAddBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
-            </div>
-            <div id="bList"></div>
-        </div>`;
+    let area=document.getElementById('timeSlotsArea');
+    area.innerHTML=`<div>
+        <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
+        <div class="block-time-row">
+            <input type="time" id="bStart" class="time-input-safe" placeholder="Начало" style="touch-action: manipulation;">
+            <span style="opacity:.5">—</span>
+            <input type="time" id="bEnd" class="time-input-safe" placeholder="Конец" style="touch-action: manipulation;">
+            <button id="bAddBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
+        </div>
+        <div id="bList"></div>
+    </div>`;
 
-        ['bStart','bEnd'].forEach(id=>{
-            let el=area.querySelector('#'+id);
-            if(el){
-                el.addEventListener('pointerdown', e=>e.stopPropagation());
-                el.addEventListener('mousedown', e=>e.stopPropagation());
-                el.addEventListener('touchstart', e=>e.stopPropagation(), {passive:false});
-            }
+    // КРИТИЧЕСКИ ВАЖНО: предотвращаем всплытие для полей ввода
+    let bStart = area.querySelector('#bStart');
+    let bEnd = area.querySelector('#bEnd');
+    
+    if(bStart){
+        // Используем mousedown и pointerdown с preventDefault
+        bStart.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
         });
+        bStart.addEventListener('pointerdown', function(e) {
+            e.stopPropagation();
+        });
+        bStart.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        // Отключаем все родительские обработчики
+        bStart.onpointerdown = function(e) { e.stopPropagation(); };
+        bStart.onmousedown = function(e) { e.stopPropagation(); };
+    }
+    
+    if(bEnd){
+        bEnd.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+        });
+        bEnd.addEventListener('pointerdown', function(e) {
+            e.stopPropagation();
+        });
+        bEnd.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        bEnd.onpointerdown = function(e) { e.stopPropagation(); };
+        bEnd.onmousedown = function(e) { e.stopPropagation(); };
+    }
 
         function renderPeriods(date){
             let list=document.getElementById('bList'); if(!list) return;
@@ -785,26 +845,38 @@ function renderCalendarUI(){
             });
         }
 
-        renderPeriods(date);
+         renderPeriods(date);
 
-        let addBtn = area.querySelector('#bAddBtn');
-        if(addBtn){
-            addBtn.onclick = function(e){
-                e.preventDefault();
-                e.stopPropagation();
-                let s=area.querySelector('#bStart').value;
-                let en=area.querySelector('#bEnd').value;
-                if(!s||!en){ showToast('Выберите время',true); return; }
+       let addBtn = area.querySelector('#bAddBtn');
+    if(addBtn){
+        addBtn.onclick = function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            let s = area.querySelector('#bStart').value;
+            let en = area.querySelector('#bEnd').value;
+            if(!s||!en){ showToast('Выберите время',true); return; }
+            
+            let startHour = parseInt(s.split(':')[0]);
+            let endHour = parseInt(en.split(':')[0]);
+            
+            if(endHour === startHour + 1 && en.split(':')[1] === '00'){
+                blockedSlots.push({
+                    id:Date.now(),
+                    date,
+                    timeStart: s,
+                    timeEnd: s.substring(0,2) + ':59'
+                });
+            } else {
                 blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
-                saveToServer(); 
-                renderPeriods(date);
-                area.querySelector('#bStart').value='';
-                area.querySelector('#bEnd').value='';
-                showToast('Период заблокирован');
-            };
-        }
-    }
-
+            }
+            
+            saveToServer(); 
+            renderPeriods(date);
+            area.querySelector('#bStart').value='';
+            area.querySelector('#bEnd').value='';
+            showToast('Период заблокирован');
+        };  
+    }  
     function loadDate(date){
         if(currentUser.role==='admin'){
             planningMode ? showPlanPanel(date) : showAdminAppts(date);
@@ -814,13 +886,21 @@ function renderCalendarUI(){
     }
 
     document.querySelectorAll('.cal-day').forEach(el=>{
-        el.addEventListener('pointerdown',function(e){
-            e.stopPropagation();
-            document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
-            this.classList.add('selected');
-            loadDate(this.dataset.date);
-        });
-    });
+    // Удаляем старый обработчик, чтобы избежать дублирования
+    el.removeEventListener('click', el._clickHandler);
+    el._clickHandler = function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        // Снимаем выделение со всех дней
+        document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+        this.classList.add('selected');
+        let selectedDate = this.dataset.date;
+        // Сохраняем выбранную дату в переменную
+        window.currentSelectedDate = selectedDate;
+        loadDate(selectedDate);
+    };
+    el.addEventListener('click', el._clickHandler);
+});
 
     let planBtn=document.getElementById('planningToggleBtn');
     if(planBtn){
@@ -998,15 +1078,19 @@ function renderDashboard(){
             </div>
         </div>
         <div class="card"><h3>Источник новостей (RSS)</h3>
-            <div class="flex-row">
-                <input type="text" id="rssUrlInput" style="flex:1" placeholder="RSS URL" value="${esc(currentRssUrl)}">
-                <button id="clearRssUrlBtn" class="btn-outline btn-small" title="Очистить">✖</button>
-                <button id="saveRssUrlBtn"  class="btn-outline btn-small">Сохранить</button>
-            </div>
-            <div style="margin-top:10px">
-                <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
-            </div>
-        </div>
+    <div class="flex-row">
+        <input type="text" id="rssUrlInput" style="flex:1" placeholder="RSS URL" value="${esc(currentRssUrl)}">
+        <button id="clearRssUrlBtn" class="btn-outline btn-small" title="Очистить">✖</button>
+        <button id="saveRssUrlBtn"  class="btn-outline btn-small">Сохранить</button>
+    </div>
+    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
+        <button id="forceLoadNewsBtn" class="btn-outline btn-small"><i class="fas fa-download"></i> Загрузить новости из таблицы</button>
+    </div>
+    <div style="margin-top:8px; font-size:11px; opacity:0.6;">
+        📌 Текущий RSS URL: ${esc(currentRssUrl) || 'не задан'}
+    </div>
+</div>
         <div class="card"><h3>Ссылки</h3>
             <div id="linksList"></div>
             <div class="flex-col" style="margin-top:12px">
@@ -1163,6 +1247,10 @@ function attachDynamicEvents(){
         });
     });
 
+    document.getElementById('forceLoadNewsBtn')?.addEventListener('click',()=>{
+    forceLoadNewsFromSheet();
+    });
+
     document.getElementById('changePasswordBtn')?.addEventListener('click',()=>{
         let op=document.getElementById('oldPassword').value;
         let np=document.getElementById('newPassword').value;
@@ -1236,9 +1324,23 @@ function initNavigation(){
     activeTab=(h&&['cases','calendar','documents','admin','userSettings'].includes(h))?h:'cases';
 }
 
+function forceLoadNews() {
+  return new Promise(resolve => {
+    callGas('forceLoadNews', {}, data => {
+      if (data && data.success && data.newsArticles) {
+        newsArticles = data.newsArticles;
+        renderNews();
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    });
+  });
+}
+
 async function init(){
+    await forceLoadNews();
     await syncDataFromServer();
-    renderNews();
     setupConsent();
     document.getElementById('doLoginBtn').onclick=handleLogin;
     document.getElementById('logoutBtn')?.addEventListener('click',logout);
@@ -1250,7 +1352,6 @@ async function init(){
     });
     initNavigation();
     doAutoLogin();
-    setTimeout(() => renderNews(), 500);
 }
 
 init();
