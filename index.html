@@ -334,7 +334,7 @@ function syncDataFromServer(){
                 resolve();
             } else if(data&&data.error==='Unauthorized'){
                 localStorage.removeItem('deviceId');
-                showLoginScreen(); showToast('Сессия истекла'); resolve();
+                showLoginScreen(); showToast('Выполните вход или зарегистрируйтесь'); resolve();
             } else { resolve(); }
         });
     });
