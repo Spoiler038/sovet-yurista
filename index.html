@@ -35,8 +35,8 @@
         .news-item:nth-child(3){animation-delay:.31s}.news-item:nth-child(4){animation-delay:.44s}
         .news-item:nth-child(5){animation-delay:.57s}.news-item:nth-child(6){animation-delay:.70s}
         @keyframes slideInNews{0%{opacity:0;transform:translateX(-180px)}100%{opacity:1;transform:translateX(0)}}
+        .news-date{font-size:10px;color:#FAC643;opacity:.8;margin-bottom:6px;display:block;text-align:right}
         .news-title{font-weight:600;font-size:14px;margin-bottom:6px;line-height:1.4}
-        .news-date{font-size:10px;color:#FAC643;opacity:.8;margin-bottom:6px;display:block}
         .news-summary{font-size:12px;opacity:.8;line-height:1.4}
 
         /* ── Header ── */
@@ -498,8 +498,8 @@ function renderNews(){
     }
     c.innerHTML=newsArticles.map(a=>`
         <div class="news-item" data-url="${esc(a.url||'')}">
+            <div class="news-date">${esc(a.date||'')}</div>
             <div class="news-title">${esc(a.title)}</div>
-            <span class="news-date">${esc(a.date||'')}</span>
             <div class="news-summary">${esc(a.summary)}</div>
         </div>`).join('');
     c.querySelectorAll('.news-item').forEach(el=>{
