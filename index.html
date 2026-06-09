@@ -295,10 +295,19 @@ function showModal(opts){
 
 async function loadTxt(name){
     try{
-        let r=await fetch('https://spoiler038.github.io/sovet-yurista/docs/'+name+'.txt');
-        if(!r.ok) throw 0; return await r.text();
+        // Используем новую GAS функцию для получения публичного документа
+        return new Promise((resolve) => {
+            callGas('getPublicDocument', { docType: name }, (data) => {
+                if(data && data.success && data.content) {
+                    resolve(data.content);
+                } else {
+                    resolve('[Документ временно недоступен]');
+                }
+            });
+        });
     }catch{ return '[Документ не найден]'; }
 }
+    
 function showDocModal(title,content){
     let ov=document.createElement('div'); ov.className='modal-overlay';
     ov.innerHTML=`<div class="modal-container modal-container-large">
