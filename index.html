@@ -391,11 +391,16 @@ function showAppScreen(){
 }
 
 function doAutoLogin(){
-    let devId=localStorage.getItem('deviceId'); if(!devId) return;
+    let devId = localStorage.getItem('deviceId'); 
+    console.log('doAutoLogin deviceId:', devId); // Отладка
+    if(!devId) return;
     callGas('autoLogin',{deviceId:devId},data=>{
+        console.log('autoLogin response:', data); // Отладка
         if(data&&data.success&&data.user){
-            currentUser=data.user; persistUser();
-            showAppScreen(); showToast('Автовход выполнен');
+            currentUser=data.user; 
+            persistUser();
+            showAppScreen(); 
+            showToast('Автовход выполнен');
         }
     });
 }
@@ -1223,6 +1228,10 @@ function attachDynamicEvents(){
         });
     });
     document.getElementById('refreshNewsBtn')?.addEventListener('click',()=>{
+    if(!currentUser || currentUser.role !== 'admin') {
+        showToast('Доступно только администратору', true);
+        return;
+    }
         callGas('refreshNews',{deviceId:localStorage.getItem('deviceId')||''},res=>{
             if(res&&res.success){
                 showToast('Новости обновлены ('+(res.added||0)+' записей)');
