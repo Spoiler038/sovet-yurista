@@ -646,10 +646,11 @@ function renderCalendarUI(){
     let todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     
     for(let d=1;d<=dim;d++){
-        let ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        let isToday = (ds === todayStr);
-        html+=`<div class="cal-day${apptDates.has(ds)?' has-appt':''}${isToday?' selected':''}" data-date="${ds}">${d}</div>`;
-    }
+    let ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let isToday = (ds === todayStr);
+    // Убираем ${isToday?' selected':''} - не выделяем сегодняшний день автоматически
+    html+=`<div class="cal-day${apptDates.has(ds)?' has-appt':''}" data-date="${ds}">${d}</div>`;
+}
     html+='</div>';
     document.getElementById('simpleCalendar').innerHTML=html;
 
@@ -918,14 +919,18 @@ if(addBtn){
             :'<i class="fas fa-calendar-plus"></i> Планирование';
     }
 
-    let selectedDay = document.querySelector('.cal-day.selected');
-    if(selectedDay){
-        loadDate(selectedDay.dataset.date);
-    } else {
-        let firstDay=document.querySelector('.cal-day');
-        if(firstDay){ firstDay.classList.add('selected'); loadDate(firstDay.dataset.date); }
+   let todayDay = document.querySelector(`.cal-day[data-date="${todayStr}"]`);
+if(todayDay){
+    todayDay.classList.add('selected');
+    loadDate(todayStr);
+} else {
+    // Если сегодня нет в текущем месяце (например, 31 число), выбираем первый день
+    let firstDay = document.querySelector('.cal-day');
+    if(firstDay){ 
+        firstDay.classList.add('selected'); 
+        loadDate(firstDay.dataset.date); 
     }
-}  
+}
 
 // ============================================================
 //  РЕНДЕР ДАШБОРДА
