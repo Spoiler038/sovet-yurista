@@ -162,6 +162,14 @@
         .block-time-row input[type="time"]{flex:1;min-width:0;margin-bottom:0;touch-action:manipulation}
         .period-row{display:flex;justify-content:space-between;align-items:center;background:#1e1f24;border-radius:14px;padding:10px 14px;margin-bottom:8px}
         .period-row-btns{display:flex;gap:6px}
+
+        .btn, button, .nav-item, .slot, .cal-day, .tab {
+    transition: transform 0.1s ease, background 0.2s ease;
+    cursor: pointer;
+}
+.btn:active, button:active, .nav-item:active, .slot:active, .cal-day:active, .tab:active {
+    transform: scale(0.97);
+}
     </style>
 </head>
 <body>
@@ -825,35 +833,37 @@ function renderCalendarUI(){
         renderPeriods(date);
 
         let addBtn = area.querySelector('#bAddBtn');
-        if(addBtn){
-            addBtn.onclick = function(e){
-                e.preventDefault();
-                e.stopPropagation();
-                let s = area.querySelector('#bStart').value;
-                let en = area.querySelector('#bEnd').value;
-                if(!s||!en){ showToast('Выберите время',true); return; }
-                
-                let startHour = parseInt(s.split(':')[0]);
-                let endHour = parseInt(en.split(':')[0]);
-                
-                if(endHour === startHour + 1 && en.split(':')[1] === '00'){
-                    blockedSlots.push({
-                        id:Date.now(),
-                        date,
-                        timeStart: s,
-                        timeEnd: s.substring(0,2) + ':59'
-                    });
-                } else {
-                    blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
-                }
-                
-                saveToServer(); 
-                renderPeriods(date);
-                area.querySelector('#bStart').value='';
-                area.querySelector('#bEnd').value='';
-                showToast('Период заблокирован');
-            };
+if(addBtn){
+    addBtn.onclick = function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        let s = area.querySelector('#bStart').value;
+        let en = area.querySelector('#bEnd').value;
+        if(!s||!en){ showToast('Выберите время',true); return; }
+        
+        // НЕ ОЧИЩАЕМ ПОЛЯ ПРИ ОШИБКЕ
+        let startHour = parseInt(s.split(':')[0]);
+        let endHour = parseInt(en.split(':')[0]);
+        
+        if(endHour === startHour + 1 && en.split(':')[1] === '00'){
+            blockedSlots.push({
+                id:Date.now(),
+                date,
+                timeStart: s,
+                timeEnd: s.substring(0,2) + ':59'
+            });
+        } else {
+            blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
         }
+        
+        saveToServer(); 
+        renderPeriods(date);
+        // ОЧИЩАЕМ ПОЛЯ ТОЛЬКО ПОСЛЕ УСПЕШНОГО ДОБАВЛЕНИЯ
+        area.querySelector('#bStart').value='';
+        area.querySelector('#bEnd').value='';
+        showToast('Период заблокирован');
+    };
+}
     }
 
     function loadDate(date){
@@ -865,18 +875,19 @@ function renderCalendarUI(){
     }
 
     document.querySelectorAll('.cal-day').forEach(el=>{
-        el.removeEventListener('click', el._clickHandler);
-        el._clickHandler = function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
-            this.classList.add('selected');
-            let selectedDate = this.dataset.date;
-            window.currentSelectedDate = selectedDate;
-            loadDate(selectedDate);
-        };
-        el.addEventListener('click', el._clickHandler);
-    });
+    el.removeEventListener('click', el._clickHandler);
+    el._clickHandler = function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        // Снимаем выделение со всех дней
+        document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+        this.classList.add('selected');
+        let selectedDate = this.dataset.date;
+        window.currentSelectedDate = selectedDate;
+        loadDate(selectedDate);
+    };
+    el.addEventListener('click', el._clickHandler);
+});
 
     let planBtn=document.getElementById('planningToggleBtn');
     if(planBtn){
@@ -946,8 +957,6 @@ function renderDashboard(){
                             <select class="status-select" data-id="${c.id}" style="flex:1;min-width:120px">
                                 ${['В процессе','Приостановлено','На рассмотрении','Завершено'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}
                             </select>
-                            <input type="number" class="progress-input" data-id="${c.id}" value="${c.progress||0}" style="width:60px" min="0" max="100">
-                            <span>%</span>
                             <button class="btn-outline btn-icon update-case-btn" data-id="${c.id}"><i class="fas fa-sync-alt"></i></button></div>`;
                     } else {
                         html+=`<p>Результат: ${esc(c.result||'Завершено')}</p>`;
@@ -966,7 +975,6 @@ function renderDashboard(){
                 html+=`<div class="case-item">
                     <div class="flex-between"><h3>${esc(cur.title)}</h3><span class="status-badge">${esc(cur.status)}</span></div>
                     <p>${esc(cur.stage||'')}</p>
-                    <div class="progress-background"><div class="progress-fill" style="width:${cur.progress||0}%"></div></div>
                     <p>Прогресс: ${cur.progress||0}%</p>`;
                 if(cur.history&&cur.history.length){
                     html+='<h4 style="margin-top:12px">Хронология</h4>';
@@ -1059,10 +1067,10 @@ function renderDashboard(){
         <button id="clearRssUrlBtn" class="btn-outline btn-small" title="Очистить">✖</button>
         <button id="saveRssUrlBtn"  class="btn-outline btn-small">Сохранить</button>
     </div>
-    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+    <div style="margin-top:10px">
         <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
-        <button id="forceLoadNewsBtn" class="btn-outline btn-small"><i class="fas fa-download"></i> Загрузить новости из таблицы</button>
     </div>
+</div>
     <div style="margin-top:8px; font-size:11px; opacity:0.6;">
         📌 Текущий RSS URL: ${esc(currentRssUrl) || 'не задан'}
     </div>
