@@ -586,107 +586,101 @@ function attachCaseEvents(){
         if(selectedArchiveCase){ selectedArchiveCase.status='В процессе'; selectedArchiveCase.progress=0; selectedArchiveCase.result=null; saveToServer(); selectedArchiveCase=null; renderDashboard(); showToast('Дело возвращено в работу'); }
     });
 
-  document.getElementById('addCaseBtn')?.addEventListener('click',()=>{
-    // Проверяем, загружены ли пользователи
-    if(!allUsers || allUsers.length === 0){
-        showToast('Список клиентов загружается, попробуйте еще раз', true);
-        return;
-    }
-    
-    let ov=document.createElement('div'); ov.className='modal-overlay';
-    ov.innerHTML=`<div class="modal-container" style="width:92%;max-width:440px;text-align:left">
-        <h3 style="text-align:center;margin-bottom:18px">Новое дело</h3>
-        <input id="newCaseTitle" placeholder="Название дела">
-        
-        <label style="font-size:12px;opacity:.65;margin:8px 0 4px 8px;display:block">Заявитель</label>
-        <div id="claimantComboContainer"></div>
-        
-        <label style="font-size:12px;opacity:.65;margin:8px 0 4px 8px;display:block">Ответчик</label>
-        <div id="defendantComboContainer"></div>
-        
-        <select id="newCaseCategory" style="margin-top:8px">
-            <option>Арбитраж</option>
-            <option>Гражданское</option>
-            <option>Административное</option>
-        </select>
-        
-        <div class="modal-buttons" style="margin-top:20px">
-            <button id="confirmCreateCaseBtn" class="btn">Создать</button>
-            <button id="cancelCreateCaseBtn" class="btn-outline">Отмена</button>
-        </div>
-    </div>`;
-    document.body.appendChild(ov);
-    
-    // Создаём combo поля
-    let claimantContainer = ov.querySelector('#claimantComboContainer');
-    let defendantContainer = ov.querySelector('#defendantComboContainer');
-    
-    // Передаём allUsers в combo поле
-    let claimantCombo = createComboField('newClaimantInput', 'Введите или выберите заявителя', allUsers);
-    let defendantCombo = createComboField('newDefendantInput', 'Введите или выберите ответчика', allUsers);
-    
-    claimantContainer.appendChild(claimantCombo);
-    defendantContainer.appendChild(defendantCombo);
-    
-    // Кнопка создания дела
-    ov.querySelector('#confirmCreateCaseBtn').onclick=()=>{
-        let title = ov.querySelector('#newCaseTitle').value.trim();
-        if(!title){ 
-            showToast('Введите название дела', true); 
-            return; 
+    document.getElementById('addCaseBtn')?.addEventListener('click',()=>{
+        if(!allUsers || allUsers.length === 0){
+            showToast('Список клиентов загружается, попробуйте еще раз', true);
+            return;
         }
         
-        let claimant = document.getElementById('newClaimantInput')?.value.trim() || '';
-        let defendant = document.getElementById('newDefendantInput')?.value.trim() || '';
-        let category = ov.querySelector('#newCaseCategory').value;
-        let baseId = Date.now();
-        let userLogins = allUsers.map(u => u.login);
+        let ov=document.createElement('div'); ov.className='modal-overlay';
+        ov.innerHTML=`<div class="modal-container" style="width:92%;max-width:440px;text-align:left">
+            <h3 style="text-align:center;margin-bottom:18px">Новое дело</h3>
+            <input id="newCaseTitle" placeholder="Название дела">
+            
+            <label style="font-size:12px;opacity:.65;margin:8px 0 4px 8px;display:block">Заявитель</label>
+            <div id="claimantComboContainer"></div>
+            
+            <label style="font-size:12px;opacity:.65;margin:8px 0 4px 8px;display:block">Ответчик</label>
+            <div id="defendantComboContainer"></div>
+            
+            <select id="newCaseCategory" style="margin-top:8px">
+                <option>Арбитраж</option>
+                <option>Гражданское</option>
+                <option>Административное</option>
+            </select>
+            
+            <div class="modal-buttons" style="margin-top:20px">
+                <button id="confirmCreateCaseBtn" class="btn">Создать</button>
+                <button id="cancelCreateCaseBtn" class="btn-outline">Отмена</button>
+            </div>
+        </div>`;
+        document.body.appendChild(ov);
         
-        // Главное дело для админа
-        allCases.push({
-            id: baseId, 
-            userId: 'admin', 
-            title, 
-            status: 'В процессе', 
-            stage: 'Новое', 
-            progress: 0, 
-            result: null, 
-            history: [], 
-            claimant, 
-            defendant, 
-            category
-        });
+        let claimantContainer = ov.querySelector('#claimantComboContainer');
+        let defendantContainer = ov.querySelector('#defendantComboContainer');
         
-        // Копии для клиентов-участников
-        [claimant, defendant].filter(Boolean).forEach((login, i)=>{
-            if(userLogins.includes(login)){
-                allCases.push({
-                    id: baseId + (i + 1), 
-                    userId: login, 
-                    title, 
-                    status: 'В процессе', 
-                    stage: 'Новое', 
-                    progress: 0, 
-                    result: null, 
-                    history: [], 
-                    claimant, 
-                    defendant, 
-                    category, 
-                    parentId: baseId
-                });
+        let claimantCombo = createComboField('newClaimantInput', 'Введите или выберите заявителя', allUsers);
+        let defendantCombo = createComboField('newDefendantInput', 'Введите или выберите ответчика', allUsers);
+        
+        claimantContainer.appendChild(claimantCombo);
+        defendantContainer.appendChild(defendantCombo);
+        
+        ov.querySelector('#confirmCreateCaseBtn').onclick=()=>{
+            let title = ov.querySelector('#newCaseTitle').value.trim();
+            if(!title){ 
+                showToast('Введите название дела', true); 
+                return; 
             }
-        });
+            
+            let claimant = document.getElementById('newClaimantInput')?.value.trim() || '';
+            let defendant = document.getElementById('newDefendantInput')?.value.trim() || '';
+            let category = ov.querySelector('#newCaseCategory').value;
+            let baseId = Date.now();
+            let userLogins = allUsers.map(u => u.login);
+            
+            allCases.push({
+                id: baseId, 
+                userId: 'admin', 
+                title, 
+                status: 'В процессе', 
+                stage: 'Новое', 
+                progress: 0, 
+                result: null, 
+                history: [], 
+                claimant, 
+                defendant, 
+                category
+            });
+            
+            [claimant, defendant].filter(Boolean).forEach((login, i)=>{
+                if(userLogins.includes(login)){
+                    allCases.push({
+                        id: baseId + (i + 1), 
+                        userId: login, 
+                        title, 
+                        status: 'В процессе', 
+                        stage: 'Новое', 
+                        progress: 0, 
+                        result: null, 
+                        history: [], 
+                        claimant, 
+                        defendant, 
+                        category, 
+                        parentId: baseId
+                    });
+                }
+            });
+            
+            saveToServer(); 
+            ov.remove(); 
+            renderDashboard(); 
+            showToast('Дело добавлено');
+        };
         
-        saveToServer(); 
-        ov.remove(); 
-        renderDashboard(); 
-        showToast('Дело добавлено');
-    };
-    
-    ov.querySelector('#cancelCreateCaseBtn').onclick=()=>ov.remove();
-    ov.onclick=e=>{ if(e.target === ov) ov.remove(); };
-});
-
+        ov.querySelector('#cancelCreateCaseBtn').onclick=()=>ov.remove();
+        ov.onclick=e=>{ if(e.target === ov) ov.remove(); };
+    });
+}  
 function attachDocAdminEvents(){
     document.querySelectorAll('.attach-doc-btn').forEach(btn=>{
         btn.onclick=function(){
