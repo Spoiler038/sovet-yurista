@@ -1070,7 +1070,23 @@ function renderDashboard(){
                 </div><h3>Мои документы</h3><div id="userDocsList"></div>`;
         }
     } else if(activeTab==='userSettings'){
-        html=`<h2><i class="fas fa-user-cog"></i> Настройки</h2>
+    html = `<h2><i class="fas fa-user-cog"></i> Настройки</h2>
+    <div class="card"><h3>Личные данные</h3>
+        <input type="text" id="editFullName" placeholder="ФИО" value="${esc(currentUser.fullName || '')}">
+        <input type="tel" id="editPhone" placeholder="Телефон" value="${esc(currentUser.phone || '')}">
+        <input type="email" id="editEmail" placeholder="Email" value="${esc(currentUser.email || '')}">
+        <button id="saveProfileBtn" class="btn btn-small">Сохранить изменения</button>
+    </div>
+    <div class="card"><h3>Смена пароля</h3>
+        <input type="password" id="oldPassword"    placeholder="Старый пароль">
+        <input type="password" id="newPassword"    placeholder="Новый пароль">
+        <input type="password" id="newPassConfirm" placeholder="Подтвердите новый пароль">
+        <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
+    </div>
+    <div class="card"><h3>Документы</h3><div class="docs-buttons">
+        <button id="downloadAgreementBtn" class="btn-outline btn-small">Пользовательское соглашение (PDF)</button>
+        <button id="downloadPrivacyBtn"   class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
+    </div></div>`;
         <div class="card"><h3>Смена пароля</h3>
             <input type="password" id="oldPassword"    placeholder="Старый пароль">
             <input type="password" id="newPassword"    placeholder="Новый пароль">
@@ -1313,6 +1329,39 @@ function attachDynamicEvents(){
             else showToast('Ошибка: '+(res.error||'?'),true);
         });
     });
+
+    document.getElementById('saveProfileBtn')?.addEventListener('click',()=>{
+    let newFullName = document.getElementById('editFullName').value.trim();
+    let newPhone = document.getElementById('editPhone').value.trim();
+    let newEmail = document.getElementById('editEmail').value.trim();
+    
+    if(!newFullName){
+        showToast('Введите ФИО', true);
+        return;
+    }
+    
+    callGas('updateOwnProfile', {
+        userId: currentUser.id,
+        fullName: newFullName,
+        phone: newPhone,
+        email: newEmail,
+        deviceId: localStorage.getItem('deviceId')
+    }, res => {
+        if(res && res.success){
+            showToast('Данные обновлены');
+            currentUser.fullName = newFullName;
+            currentUser.phone = newPhone;
+            currentUser.email = newEmail;
+            persistUser();
+            // Генерируем новые PDF с актуальными данными
+            callGas('generateDocument', { docType: 'agreement', deviceId: localStorage.getItem('deviceId') });
+            callGas('generateDocument', { docType: 'privacy', deviceId: localStorage.getItem('deviceId') });
+            renderDashboard();
+        } else {
+            showToast('Ошибка: ' + (res.error || '?'), true);
+        }
+    });
+});
 
     document.getElementById('downloadAgreementBtn')?.addEventListener('click',()=>window.open('https://spoiler038.github.io/sovet-yurista/docs/user-agreement.pdf','_blank'));
     document.getElementById('downloadPrivacyBtn')  ?.addEventListener('click',()=>window.open('https://spoiler038.github.io/sovet-yurista/docs/privacy-policy.pdf','_blank'));
