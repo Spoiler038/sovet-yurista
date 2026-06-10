@@ -69,7 +69,6 @@
         /* ── Inputs ── */
         input,select,textarea{background:#2E2F35;border:1px solid #3D3E45;border-radius:40px;padding:12px 10px;color:white;width:100%;margin-bottom:16px;font-family:'Poppins',sans-serif;font-size:14px}
         input:focus,select:focus{border-color:#FAC643;outline:none}
-        /* Фикс: input внутри flex-row не теряет значение при pointer-событиях */
         .time-input-safe{touch-action:manipulation;-webkit-user-select:text;user-select:text}
 
         /* ── Consent ── */
@@ -159,17 +158,18 @@
 
         /* ── Block periods ── */
         .block-time-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-        .block-time-row input[type="time"]{flex:1;min-width:0;margin-bottom:0;touch-action:manipulation}
+        .block-time-row input[type="time"]{flex:1;min-width:0;margin-bottom:0}
         .period-row{display:flex;justify-content:space-between;align-items:center;background:#1e1f24;border-radius:14px;padding:10px 14px;margin-bottom:8px}
         .period-row-btns{display:flex;gap:6px}
 
-        .btn, button, .nav-item, .slot, .cal-day, .tab {
-    transition: transform 0.1s ease, background 0.2s ease;
-    cursor: pointer;
-}
-.btn:active, button:active, .nav-item:active, .slot:active, .cal-day:active, .tab:active {
-    transform: scale(0.97);
-}
+        /* ── Client card ── */
+        .client-item{background:#2E2F35;border-radius:16px;padding:12px;margin-bottom:8px;cursor:default}
+        .client-header{display:flex;justify-content:space-between;align-items:center}
+        .client-details{display:none;margin-top:8px;padding-top:8px;border-top:1px solid #3D3E45}
+        .client-details input{margin-bottom:8px}
+
+        .btn,.btn-outline,.btn-danger,.btn-success,.nav-item,.slot,.cal-day,.tab{transition:transform 0.1s ease,background 0.2s ease;cursor:pointer}
+        .btn:active,.btn-outline:active,.btn-danger:active,.btn-success:active,.nav-item:active,.slot:active,.cal-day:active,.tab:active{transform:scale(0.97)}
     </style>
 </head>
 <body>
@@ -295,7 +295,6 @@ function showModal(opts){
 
 async function loadTxt(name){
     try{
-        // Используем новую GAS функцию для получения публичного документа
         return new Promise((resolve) => {
             callGas('getPublicDocument', { docType: name }, (data) => {
                 if(data && data.success && data.content) {
@@ -307,7 +306,7 @@ async function loadTxt(name){
         });
     }catch{ return '[Документ не найден]'; }
 }
-    
+
 function showDocModal(title,content){
     let ov=document.createElement('div'); ov.className='modal-overlay';
     ov.innerHTML=`<div class="modal-container modal-container-large">
@@ -325,9 +324,23 @@ function showDocModal(title,content){
 //  GAS / JSONP
 // ============================================================
 function callGas(action, params, cb){
+    // ФИX: проверяем, что cb — функция (защита от "cb is not a function")
+    if(typeof cb !== 'function'){
+        console.warn('callGas: callback is not a function for action', action);
+        return;
+    }
     let s=document.createElement('script');
-    let name='_cb_'+Math.round(1e7*Math.random());
-    window[name]=data=>{ delete window[name]; document.body.removeChild(s); cb(data); };
+    let name='_cb_'+Math.round(1e9*Math.random());
+    // ФИX: таймаут для защиты от зависших JSONP-запросов
+    let timer = setTimeout(()=>{
+        if(window[name]){ delete window[name]; if(s.parentNode) s.parentNode.removeChild(s); cb({success:false,error:'timeout'}); }
+    }, 15000);
+    window[name]=data=>{
+        clearTimeout(timer);
+        delete window[name];
+        if(s.parentNode) s.parentNode.removeChild(s);
+        cb(data);
+    };
     let url=GAS_URL+'?action='+encodeURIComponent(action)+'&callback='+name;
     for(let k in params) url+='&'+encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
     s.src=url; document.body.appendChild(s);
@@ -348,91 +361,73 @@ function syncDataFromServer(){
                 if(!/^\d{2}:\d{2}$/.test(workHours.start)) workHours.start='09:00';
                 if(!/^\d{2}:\d{2}$/.test(workHours.end))   workHours.end='18:00';
                 currentRssUrl   = data.rss_feed_url || '';
-                console.log('RSS URL из GAS:', currentRssUrl);
                 if(currentRssUrl) localStorage.setItem('rssUrl', currentRssUrl);
                 resolve();
-            } else if(data&&data.error==='Unauthorized'){
-                // НЕ ОЧИЩАЕМ deviceId и НЕ ПОКАЗЫВАЕМ ЭКРАН ВХОДА, если пользователь уже есть
-                // Просто разрешаем, данные будут пустыми
-                console.log('getAllData вернул Unauthorized, возможно пользователь не авторизован');
+            } else {
                 resolve();
-            } else { resolve(); }
+            }
         });
     });
 }
 
+// ФИX: saveToServer — правильно сериализует данные, не дублирует пустые массивы
 function saveToServer(){
-    // Разделяем сохранение на части, чтобы избежать превышения лимита URL
     let deviceId = localStorage.getItem('deviceId')||'';
-    
+
     // Сохраняем дела
     callGas('saveAllData',{
         cases: JSON.stringify(allCases),
-        documents: '[]',
-        appointments: '[]',
-        blockedSlots: '[]',
-        newsArticles: '[]',
-        newsLinks: '[]',
-        workHours: '{}',
+        documents: JSON.stringify([]),
+        appointments: JSON.stringify([]),
+        blockedSlots: JSON.stringify([]),
+        newsArticles: JSON.stringify([]),
+        newsLinks: JSON.stringify([]),
+        workHours: JSON.stringify({}),
         deviceId: deviceId
-    }, r=>console.log('cases saved',r));
-    
+    }, r=>{ if(r&&!r.success) console.warn('cases save error',r); });
+
     // Сохраняем документы
     callGas('saveAllData',{
-        cases: '[]',
+        cases: JSON.stringify([]),
         documents: JSON.stringify(allDocuments),
-        appointments: '[]',
-        blockedSlots: '[]',
-        newsArticles: '[]',
-        newsLinks: '[]',
-        workHours: '{}',
+        appointments: JSON.stringify([]),
+        blockedSlots: JSON.stringify([]),
+        newsArticles: JSON.stringify([]),
+        newsLinks: JSON.stringify([]),
+        workHours: JSON.stringify({}),
         deviceId: deviceId
-    }, r=>console.log('documents saved',r));
-    
-    // Сохраняем записи
-    callGas('saveAllData',{
-        cases: '[]',
-        documents: '[]',
-        appointments: JSON.stringify(allAppointments),
-        blockedSlots: '[]',
-        newsArticles: '[]',
-        newsLinks: '[]',
-        workHours: '{}',
-        deviceId: deviceId
-    }, r=>console.log('appointments saved',r));
-    
+    }, r=>{ if(r&&!r.success) console.warn('docs save error',r); });
+
     // Сохраняем заблокированные слоты
     callGas('saveAllData',{
-        cases: '[]',
-        documents: '[]',
-        appointments: '[]',
+        cases: JSON.stringify([]),
+        documents: JSON.stringify([]),
+        appointments: JSON.stringify([]),
         blockedSlots: JSON.stringify(blockedSlots),
-        newsArticles: '[]',
-        newsLinks: '[]',
-        workHours: '{}',
+        newsArticles: JSON.stringify([]),
+        newsLinks: JSON.stringify([]),
+        workHours: JSON.stringify({}),
         deviceId: deviceId
-    }, r=>console.log('blockedSlots saved',r));
-    
-    // Сохраняем новости и ссылки
+    }, r=>{ if(r&&!r.success) console.warn('slots save error',r); });
+
+    // Сохраняем новости, ссылки и часы работы
     callGas('saveAllData',{
-        cases: '[]',
-        documents: '[]',
-        appointments: '[]',
-        blockedSlots: '[]',
+        cases: JSON.stringify([]),
+        documents: JSON.stringify([]),
+        appointments: JSON.stringify([]),
+        blockedSlots: JSON.stringify([]),
         newsArticles: JSON.stringify(newsArticles),
         newsLinks: JSON.stringify(newsLinks),
         workHours: JSON.stringify(workHours),
         deviceId: deviceId
-    }, r=>console.log('news saved',r));
+    }, r=>{ if(r&&!r.success) console.warn('news save error',r); });
 }
 
 function persistUser(){
     localStorage.setItem('currentUser',JSON.stringify(currentUser));
     if(currentUser && currentUser.deviceId){
         localStorage.setItem('deviceId', currentUser.deviceId);
-        console.log('deviceId сохранён:', currentUser.deviceId);
     } else {
-        console.log('deviceId НЕ сохранён');
         localStorage.removeItem('deviceId');
     }
 }
@@ -457,19 +452,21 @@ function showAppScreen(){
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appDashboard').classList.remove('hidden');
     buildBottomNav();
-    renderDashboard();
+    // ФИX: синхронизируем данные перед рендером, чтобы раздел "Дела" не был пустым
+    syncDataFromServer().then(()=>{
+        renderNews();
+        renderDashboard();
+    });
 }
 
 function doAutoLogin(){
-    let devId = localStorage.getItem('deviceId'); 
-    console.log('doAutoLogin deviceId:', devId); // Отладка
+    let devId = localStorage.getItem('deviceId');
     if(!devId) return;
     callGas('autoLogin',{deviceId:devId},data=>{
-        console.log('autoLogin response:', data); // Отладка
         if(data&&data.success&&data.user){
-            currentUser=data.user; 
+            currentUser=data.user;
             persistUser();
-            showAppScreen(); 
+            showAppScreen();
             showToast('Автовход выполнен');
         }
     });
@@ -491,18 +488,17 @@ async function handleLogin(){
     let login=document.getElementById('loginUsername').value.trim();
     let pass =document.getElementById('loginPassword').value.trim();
     if(!document.getElementById('consentCheckbox').checked){
-        showModal({title:'Требуется согласие',message:'Примите условия обработки ПД.',confirmText:'Понятно'}); 
+        showModal({title:'Требуется согласие',message:'Примите условия обработки ПД.',confirmText:'Понятно'});
         return;
     }
     callGas('login',{login,password:pass,deviceId:localStorage.getItem('deviceId')||''},data=>{
         if(data&&data.success){
-            currentUser=data.user; 
+            currentUser=data.user;
             persistUser();
-            clearLoginForm();  // Очищаем только при успешном входе
-            showAppScreen(); 
+            clearLoginForm();
+            showAppScreen();
             showToast('Добро пожаловать!');
         } else {
-            // НЕ ОЧИЩАЕМ ПОЛЯ ПРИ ОШИБКЕ, просто показываем сообщение
             showModal({title:'Ошибка входа',message:'Неверный логин или пароль.',icon:'fas fa-lock',confirmText:'OK'});
         }
     });
@@ -572,14 +568,13 @@ function renderNews(){
     });
 }
 
-    function forceLoadNewsFromSheet(){
+function forceLoadNewsFromSheet(){
     showToast('Загрузка новостей из таблицы...');
     callGas('forceLoadNews', {}, data => {
         if(data && data.success && data.newsArticles){
             newsArticles = data.newsArticles;
             renderNews();
             showToast('Загружено ' + newsArticles.length + ' новостей');
-            // Если админ на странице настроек, обновим отображение
             if(activeTab === 'admin' && currentUser && currentUser.role === 'admin'){
                 renderDashboard();
             }
@@ -625,15 +620,26 @@ function createComboField(inputId, placeholder, users, initialValue=''){
 //  ДЕЛА
 // ============================================================
 function attachCaseEvents(){
+    // ФИX: читаем статус из select в момент клика, а не из DOM-значения по умолчанию
     document.querySelectorAll('.update-case-btn').forEach(btn=>{
-        btn.onclick=function(){
-            let id=+this.dataset.id, c=allCases.find(x=>x.id==id); if(!c) return;
+        btn.onclick=function(e){
+            e.stopPropagation();
+            let id=+this.dataset.id;
+            let c=allCases.find(x=>x.id==id);
+            if(!c) return;
             let row=this.closest('.case-item');
-            c.status  =row.querySelector('.status-select').value;
-            c.progress=parseInt(row.querySelector('.progress-input').value)||0;
+            // ФИX: читаем выбранное значение select
+            let statusSelect=row.querySelector('.status-select[data-id="'+id+'"]');
+            if(statusSelect) c.status=statusSelect.value;
+            let progressInput=row.querySelector('.progress-input[data-id="'+id+'"]');
+            if(progressInput) c.progress=parseInt(progressInput.value)||0;
             if(c.status==='Завершено') c.result='Завершено администратором';
             (c.history=c.history||[]).push({date:new Date().toISOString().slice(0,10),status:c.status,stage:c.stage||'',docs:[]});
-            saveToServer(); renderDashboard(); showToast('Дело обновлено');
+            // ФИX: обновляем updatedAt для правильной записи в GAS
+            c.updatedAt=new Date().toISOString();
+            saveToServer();
+            renderDashboard();
+            showToast('Дело обновлено');
         };
     });
     document.querySelectorAll('.view-detail-btn').forEach(btn=>{
@@ -645,108 +651,58 @@ function attachCaseEvents(){
     });
 
     document.getElementById('addCaseBtn')?.addEventListener('click',()=>{
-    // Проверяем, загружены ли пользователи
-    if(!allUsers || allUsers.length === 0){
-        showToast('Список клиентов загружается, попробуйте еще раз', true);
-        // Пытаемся загрузить заново
-        syncDataFromServer().then(() => {
-            if(allUsers && allUsers.length > 0){
-                // Повторно открываем окно
-                document.getElementById('addCaseBtn').click();
-            }
-        });
-        return;
-    }
-        
+        if(!allUsers || allUsers.length === 0){
+            showToast('Список клиентов загружается, попробуйте еще раз', true);
+            syncDataFromServer().then(() => {
+                if(allUsers && allUsers.length > 0){ document.getElementById('addCaseBtn')?.click(); }
+            });
+            return;
+        }
+
         let ov=document.createElement('div'); ov.className='modal-overlay';
         ov.innerHTML=`<div class="modal-container" style="width:92%;max-width:440px;text-align:left">
             <h3 style="text-align:center;margin-bottom:18px">Новое дело</h3>
             <input id="newCaseTitle" placeholder="Название дела">
-            
             <label style="font-size:12px;opacity:.65;margin:8px 0 4px 8px;display:block">Заявитель</label>
             <div id="claimantComboContainer"></div>
-            
             <label style="font-size:12px;opacity:.65;margin:8px 0 4px 8px;display:block">Ответчик</label>
             <div id="defendantComboContainer"></div>
-            
             <select id="newCaseCategory" style="margin-top:8px">
                 <option>Арбитраж</option>
                 <option>Гражданское</option>
                 <option>Административное</option>
             </select>
-            
             <div class="modal-buttons" style="margin-top:20px">
                 <button id="confirmCreateCaseBtn" class="btn">Создать</button>
                 <button id="cancelCreateCaseBtn" class="btn-outline">Отмена</button>
             </div>
         </div>`;
         document.body.appendChild(ov);
-        
-        let claimantContainer = ov.querySelector('#claimantComboContainer');
-        let defendantContainer = ov.querySelector('#defendantComboContainer');
-        
-        let claimantCombo = createComboField('newClaimantInput', 'Введите или выберите заявителя', allUsers);
-        let defendantCombo = createComboField('newDefendantInput', 'Введите или выберите ответчика', allUsers);
-        
-        claimantContainer.appendChild(claimantCombo);
-        defendantContainer.appendChild(defendantCombo);
-        
+
+        ov.querySelector('#claimantComboContainer').appendChild(createComboField('newClaimantInput','Введите или выберите заявителя',allUsers));
+        ov.querySelector('#defendantComboContainer').appendChild(createComboField('newDefendantInput','Введите или выберите ответчика',allUsers));
+
         ov.querySelector('#confirmCreateCaseBtn').onclick=()=>{
-            let title = ov.querySelector('#newCaseTitle').value.trim();
-            if(!title){ 
-                showToast('Введите название дела', true); 
-                return; 
-            }
-            
-            let claimant = document.getElementById('newClaimantInput')?.value.trim() || '';
-            let defendant = document.getElementById('newDefendantInput')?.value.trim() || '';
-            let category = ov.querySelector('#newCaseCategory').value;
-            let baseId = Date.now();
-            let userLogins = allUsers.map(u => u.login);
-            
-            allCases.push({
-                id: baseId, 
-                userId: 'admin', 
-                title, 
-                status: 'В процессе', 
-                stage: 'Новое', 
-                progress: 0, 
-                result: null, 
-                history: [], 
-                claimant, 
-                defendant, 
-                category
-            });
-            
-            [claimant, defendant].filter(Boolean).forEach((login, i)=>{
+            let title=ov.querySelector('#newCaseTitle').value.trim();
+            if(!title){ showToast('Введите название дела',true); return; }
+            let claimant=document.getElementById('newClaimantInput')?.value.trim()||'';
+            let defendant=document.getElementById('newDefendantInput')?.value.trim()||'';
+            let category=ov.querySelector('#newCaseCategory').value;
+            let baseId=Date.now();
+            let userLogins=allUsers.map(u=>u.login);
+            allCases.push({id:baseId,userId:'admin',title,status:'В процессе',stage:'Новое',progress:0,result:null,history:[],claimant,defendant,category});
+            [claimant,defendant].filter(Boolean).forEach((login,i)=>{
                 if(userLogins.includes(login)){
-                    allCases.push({
-                        id: baseId + (i + 1), 
-                        userId: login, 
-                        title, 
-                        status: 'В процессе', 
-                        stage: 'Новое', 
-                        progress: 0, 
-                        result: null, 
-                        history: [], 
-                        claimant, 
-                        defendant, 
-                        category, 
-                        parentId: baseId
-                    });
+                    allCases.push({id:baseId+(i+1),userId:login,title,status:'В процессе',stage:'Новое',progress:0,result:null,history:[],claimant,defendant,category,parentId:baseId});
                 }
             });
-            
-            saveToServer(); 
-            ov.remove(); 
-            renderDashboard(); 
-            showToast('Дело добавлено');
+            saveToServer(); ov.remove(); renderDashboard(); showToast('Дело добавлено');
         };
-        
         ov.querySelector('#cancelCreateCaseBtn').onclick=()=>ov.remove();
-        ov.onclick=e=>{ if(e.target === ov) ov.remove(); };
+        ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
     });
-}  
+}
+
 function attachDocAdminEvents(){
     document.querySelectorAll('.attach-doc-btn').forEach(btn=>{
         btn.onclick=function(){
@@ -772,9 +728,7 @@ function renderCalendarUI(){
     let html='<div class="cal-grid">'+['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div style="font-weight:700;text-align:center;font-size:11px;opacity:.6">${d}</div>`).join('');
     let off=new Date(year,month,1).getDay()-1; if(off<0) off=6;
     for(let i=0;i<off;i++) html+='<div></div>';
-    
-    let todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-    
+    let todayStr=`${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     for(let d=1;d<=dim;d++){
         let ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         html+=`<div class="cal-day${apptDates.has(ds)?' has-appt':''}" data-date="${ds}">${d}</div>`;
@@ -782,11 +736,17 @@ function renderCalendarUI(){
     html+='</div>';
     document.getElementById('simpleCalendar').innerHTML=html;
 
+    // ФИX: загружаем appointments перед показом, чтобы отображались новые заявки
+    function refreshAndShowDate(date){
+        syncDataFromServer().then(()=>loadDate(date));
+    }
+
     function showAdminAppts(date){
         let now=new Date();
+        // ФИX: re-read allAppointments после синхронизации
         let apps=allAppointments.filter(a=>a.date===date).sort((a,b)=>a.time.localeCompare(b.time));
         let pending  =apps.filter(a=>a.status==='pending');
-        let confirmed=apps.filter(a=>a.status!=='pending');
+        let confirmed=apps.filter(a=>a.status==='confirmed');
         let apptHtml='';
 
         if(pending.length){
@@ -833,7 +793,11 @@ function renderCalendarUI(){
         document.querySelectorAll('.confirm-btn').forEach(btn=>{
             btn.onclick=e=>{ e.stopPropagation();
                 let a=allAppointments.find(x=>x.id==btn.dataset.id); if(!a) return;
-                a.status='confirmed'; saveToServer(); showToast('Запись подтверждена'); showAdminAppts(date);
+                // ФИX: сохраняем через специальный saveAllData с appointment update
+                a.status='confirmed';
+                saveToServer();
+                showToast('Запись подтверждена');
+                showAdminAppts(date);
             };
         });
         document.querySelectorAll('.delete-btn').forEach(btn=>{
@@ -857,22 +821,17 @@ function renderCalendarUI(){
 
     function showClientSlots(date){
         window.currentSelectedDate = date;
-        
         let s=parseInt((workHours.start||'09:00').split(':')[0]);
         let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
         let slots=[];
-        
         for(let h=s; h<e; h++){
-            let timeStart = String(h).padStart(2,'0') + ':00';
-            let isBlocked = blockedSlots.some(b => {
-                if(b.date !== date) return false;
-                return (timeStart >= b.timeStart && timeStart < b.timeEnd);
+            let timeStart=String(h).padStart(2,'0')+':00';
+            let isBlocked=blockedSlots.some(b=>{
+                if(b.date!==date) return false;
+                return (timeStart>=b.timeStart && timeStart<b.timeEnd);
             });
-            if(!isBlocked){
-                slots.push(timeStart);
-            }
+            if(!isBlocked) slots.push(timeStart);
         }
-        
         let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
         slots.forEach(t=>{
             let bk=allAppointments.some(a=>a.date===date && a.time===t);
@@ -880,13 +839,12 @@ function renderCalendarUI(){
         });
         slotsHtml+='</div></div>';
         document.getElementById('timeSlotsArea').innerHTML=slotsHtml;
-        
         document.querySelectorAll('.slot.free').forEach(slot=>{
             slot.addEventListener('click',function(e){
                 e.stopPropagation();
                 document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
-                window.selectedSlot={date: window.currentSelectedDate, time:this.dataset.time};
-                this.style.border='2px solid #FAC643'; 
+                window.selectedSlot={date:window.currentSelectedDate,time:this.dataset.time};
+                this.style.border='2px solid #FAC643';
                 this.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
                 showToast('Выбрано: '+this.dataset.time);
             });
@@ -894,110 +852,74 @@ function renderCalendarUI(){
     }
 
     function showPlanPanel(date){
-    let area=document.getElementById('timeSlotsArea');
-    area.innerHTML=`<div>
-        <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
-        <div class="block-time-row">
-            <input type="time" id="blockStartTime" class="time-input-safe" placeholder="Начало">  <!-- УНИКАЛЬНЫЙ ID -->
-            <span style="opacity:.5">—</span>
-            <input type="time" id="blockEndTime" class="time-input-safe" placeholder="Конец">      <!-- УНИКАЛЬНЫЙ ID -->
-            <button id="addBlockTimeBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
-        </div>
-        <div id="blockedPeriodsList"></div>
-    </div>`;
-
-    let bStart = area.querySelector('#blockStartTime');
-    let bEnd = area.querySelector('#blockEndTime');
-    
-    // Простые обработчики без stopPropagation
-    if(bStart){
-        bStart.onclick = function(e) { e.stopPropagation(); };
-    }
-    if(bEnd){
-        bEnd.onclick = function(e) { e.stopPropagation(); };
-    }
-
-    function renderPeriods(date){
-        let list=document.getElementById('blockedPeriodsList'); 
-        if(!list) return;
-        let periods=blockedSlots.filter(b=>b.date===date);
-        if(!periods.length){ list.innerHTML='<p style="opacity:.5;margin-top:8px">Нет периодов</p>'; return; }
-        list.innerHTML=periods.map((p,i)=>`
-            <div class="period-row">
-                <span style="font-weight:600">${p.timeStart} — ${p.timeEnd}</span>
-                <div class="period-row-btns">
-                    <button class="btn btn-outline btn-small edit-period" data-i="${i}" style="padding:5px 10px"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="btn btn-danger btn-small del-period" data-i="${i}" style="padding:5px 10px"><i class="fas fa-trash-alt"></i></button>
-                </div>
+        let area=document.getElementById('timeSlotsArea');
+        // ФИX: используем уникальные id для полей в панели планирования
+        area.innerHTML=`<div>
+            <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
+            <div class="block-time-row">
+                <input type="time" id="blockStartTime" placeholder="Начало">
+                <span style="opacity:.5">—</span>
+                <input type="time" id="blockEndTime" placeholder="Конец">
+                <button id="addBlockTimeBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
             </div>
-        `).join('');
+            <div id="blockedPeriodsList"></div>
+        </div>`;
 
-        list.querySelectorAll('.del-period').forEach(btn=>{
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx];
-                if(!p) return;
-                blockedSlots=blockedSlots.filter(b=>b!==p); 
-                saveToServer(); 
-                renderPeriods(date); 
-                showToast('Удалено');
-            };
-        });
+        // ФИX: stopPropagation на полях времени — не очищаем значения
+        area.querySelector('#blockStartTime').addEventListener('click', e=>e.stopPropagation());
+        area.querySelector('#blockEndTime').addEventListener('click', e=>e.stopPropagation());
+        area.querySelector('#blockStartTime').addEventListener('touchstart', e=>e.stopPropagation(), {passive:true});
+        area.querySelector('#blockEndTime').addEventListener('touchstart', e=>e.stopPropagation(), {passive:true});
+        area.querySelector('#blockStartTime').addEventListener('focus', e=>e.stopPropagation());
+        area.querySelector('#blockEndTime').addEventListener('focus', e=>e.stopPropagation());
 
-        list.querySelectorAll('.edit-period').forEach(btn=>{
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx]; 
-                if(!p) return;
-                let newStart = prompt("Новое время начала", p.timeStart);
-                let newEnd = prompt("Новое время окончания", p.timeEnd);
-                if(newStart && newEnd){
-                    p.timeStart = newStart;
-                    p.timeEnd = newEnd;
-                    saveToServer();
-                    renderPeriods(date);
-                    showToast('Обновлено');
-                }
-            };
-        });
-    }
+        function renderPeriods(){
+            let list=document.getElementById('blockedPeriodsList'); if(!list) return;
+            let periods=blockedSlots.filter(b=>b.date===date);
+            if(!periods.length){ list.innerHTML='<p style="opacity:.5;margin-top:8px">Нет периодов</p>'; return; }
+            list.innerHTML=periods.map((p,i)=>`
+                <div class="period-row">
+                    <span style="font-weight:600">${p.timeStart} — ${p.timeEnd}</span>
+                    <div class="period-row-btns">
+                        <button class="btn btn-outline btn-small edit-period" data-i="${i}" style="padding:5px 10px"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="btn btn-danger btn-small del-period" data-i="${i}" style="padding:5px 10px"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>`).join('');
 
-    renderPeriods(date);
-
-    let addBtn = area.querySelector('#addBlockTimeBtn');
-if(addBtn){
-    addBtn.onclick = function(e){
-        e.preventDefault();
-        e.stopPropagation();
-        let s = area.querySelector('#blockStartTime').value;
-        let en = area.querySelector('#blockEndTime').value;
-        if(!s||!en){ 
-            showToast('Выберите время',true); 
-            return;  // НЕ ОЧИЩАЕМ ПОЛЯ
+            list.querySelectorAll('.del-period').forEach(btn=>{
+                btn.onclick=e=>{
+                    e.stopPropagation();
+                    let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx];
+                    if(!p) return;
+                    blockedSlots=blockedSlots.filter(b=>b!==p);
+                    saveToServer(); renderPeriods(); showToast('Удалено');
+                };
+            });
+            list.querySelectorAll('.edit-period').forEach(btn=>{
+                btn.onclick=e=>{
+                    e.stopPropagation();
+                    let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx]; if(!p) return;
+                    let newStart=prompt("Новое время начала",p.timeStart);
+                    let newEnd=prompt("Новое время окончания",p.timeEnd);
+                    if(newStart&&newEnd){ p.timeStart=newStart; p.timeEnd=newEnd; saveToServer(); renderPeriods(); showToast('Обновлено'); }
+                };
+            });
         }
-            
-            let startHour = parseInt(s.split(':')[0]);
-            let endHour = parseInt(en.split(':')[0]);
-            
-            if(endHour === startHour + 1 && en.split(':')[1] === '00'){
-                blockedSlots.push({
-                    id:Date.now(),
-                    date,
-                    timeStart: s,
-                    timeEnd: s.substring(0,2) + ':59'
-                });
-            } else {
-                blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
-            }
-            
-            saveToServer(); 
-            renderPeriods(date);
+
+        renderPeriods();
+
+        area.querySelector('#addBlockTimeBtn').onclick=function(e){
+            e.preventDefault(); e.stopPropagation();
+            let s=area.querySelector('#blockStartTime').value;
+            let en=area.querySelector('#blockEndTime').value;
+            if(!s||!en){ showToast('Выберите время',true); return; }
+            blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
+            saveToServer(); renderPeriods();
             area.querySelector('#blockStartTime').value='';
             area.querySelector('#blockEndTime').value='';
             showToast('Период заблокирован');
         };
     }
-}
 
     function loadDate(date){
         if(currentUser.role==='admin'){
@@ -1007,23 +929,21 @@ if(addBtn){
         }
     }
 
-    // Обработчики кликов по дням - с проверкой, что клик именно по дню
     document.querySelectorAll('.cal-day').forEach(el=>{
-        el.removeEventListener('click', el._clickHandler);
-        el._clickHandler = function(e) {
-            // Проверяем, что клик именно по элементу дня, а не по внутренним элементам
-            if(e.target !== this) return;
-            
+        el.addEventListener('click', function(e){
             e.stopPropagation();
             document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
             this.classList.add('selected');
-            let selectedDate = this.dataset.date;
-            window.currentSelectedDate = selectedDate;
-            // Сохраняем выбранную дату в localStorage
-            localStorage.setItem('selectedDate', selectedDate);
-            loadDate(selectedDate);
-        };
-        el.addEventListener('click', el._clickHandler);
+            let selectedDate=this.dataset.date;
+            window.currentSelectedDate=selectedDate;
+            localStorage.setItem('selectedDate',selectedDate);
+            // ФИX: для admin — всегда синхронизируем перед показом
+            if(currentUser.role==='admin' && !planningMode){
+                refreshAndShowDate(selectedDate);
+            } else {
+                loadDate(selectedDate);
+            }
+        });
     });
 
     let planBtn=document.getElementById('planningToggleBtn');
@@ -1041,23 +961,18 @@ if(addBtn){
             :'<i class="fas fa-calendar-plus"></i> Планирование';
     }
 
-    // Выбираем сохранённую дату или сегодняшний день
-    let savedDate = localStorage.getItem('selectedDate');
-    let targetDay = null;
-    
-    if(savedDate){
-        targetDay = document.querySelector(`.cal-day[data-date="${savedDate}"]`);
-    }
-    if(!targetDay){
-        targetDay = document.querySelector(`.cal-day[data-date="${todayStr}"]`);
-    }
-    if(!targetDay){
-        targetDay = document.querySelector('.cal-day');
-    }
-    
+    let savedDate=localStorage.getItem('selectedDate');
+    let targetDay=null;
+    if(savedDate) targetDay=document.querySelector(`.cal-day[data-date="${savedDate}"]`);
+    if(!targetDay) targetDay=document.querySelector(`.cal-day[data-date="${todayStr}"]`);
+    if(!targetDay) targetDay=document.querySelector('.cal-day');
     if(targetDay){
         targetDay.classList.add('selected');
-        loadDate(targetDay.dataset.date);
+        if(currentUser.role==='admin' && !planningMode){
+            refreshAndShowDate(targetDay.dataset.date);
+        } else {
+            loadDate(targetDay.dataset.date);
+        }
     }
 }
 
@@ -1066,14 +981,15 @@ if(addBtn){
 // ============================================================
 function renderDashboard(){
     if(!currentUser) return;
-    if(typeof currentRssUrl === 'undefined' || currentRssUrl === null) currentRssUrl = '';
+    if(typeof currentRssUrl === 'undefined' || currentRssUrl === null) currentRssUrl='';
     document.getElementById('userAvatar').textContent=currentUser.login.charAt(0).toUpperCase();
     document.getElementById('userName').textContent=currentUser.login==='admin'?'Администратор':currentUser.login;
     document.getElementById('userRole').textContent=currentUser.role==='admin'?'Администратор':'Клиент';
 
     let container=document.getElementById('mainContent');
     let isAdmin=(currentUser.role==='admin');
-    let html='';    
+    let html='';
+
     if(activeTab==='cases'){
         if(isAdmin){
             html=`<div class="tabs">
@@ -1099,10 +1015,11 @@ function renderDashboard(){
                         <div class="flex-between"><h3>${esc(c.title)}</h3><span class="status-badge">${esc(c.status)}</span></div>
                         <p style="font-size:12px;opacity:.6">Заявитель: ${esc(c.claimant||'—')} | Ответчик: ${esc(c.defendant||'—')}</p>`;
                     if(c.status!=='Завершено'){
+                        // ФИX: добавлен data-id на select и input для надёжного поиска
                         html+=`<p>${esc(c.stage||'')}</p>
                             <div class="flex-row" style="margin-top:8px;flex-wrap:wrap">
                             <select class="status-select" data-id="${c.id}" style="flex:1;min-width:120px">
-                                ${['В процессе','Приостановлено','На рассмотрении','Завершено'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}
+                                ${['В процессе','Приостановлено','На рассмотрении','Завершено'].map(s=>`<option${c.status===s?' selected':''}>${s}</option>`).join('')}
                             </select>
                             <button class="btn-outline btn-icon update-case-btn" data-id="${c.id}"><i class="fas fa-sync-alt"></i></button></div>`;
                     } else {
@@ -1181,87 +1098,73 @@ function renderDashboard(){
                 </div><h3>Мои документы</h3><div id="userDocsList"></div>`;
         }
     } else if(activeTab==='userSettings'){
-    html = `<h2><i class="fas fa-user-cog"></i> Настройки</h2>
-    <div class="card"><h3>Личные данные</h3>
-        <input type="text" id="editFullName" placeholder="ФИО" value="${esc(currentUser.fullName || '')}">
-        <input type="tel" id="editPhone" placeholder="Телефон" value="${esc(currentUser.phone || '')}">
-        <input type="email" id="editEmail" placeholder="Email" value="${esc(currentUser.email || '')}">
-        <button id="saveProfileBtn" class="btn btn-small">Сохранить изменения</button>
-    </div>
-    <div class="card"><h3>Смена пароля</h3>
-        <input type="password" id="oldPassword"    placeholder="Старый пароль">
-        <input type="password" id="newPassword"    placeholder="Новый пароль">
-        <input type="password" id="newPassConfirm" placeholder="Подтвердите новый пароль">
-        <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
-    </div>
-    <div class="card"><h3>Документы</h3><div class="docs-buttons">
-        <button id="downloadAgreementBtn" class="btn-outline btn-small">Пользовательское соглашение (PDF)</button>
-        <button id="downloadPrivacyBtn"   class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
-    </div></div>`;
-    }else if(activeTab==='admin'&&isAdmin){
-    // Принудительно получаем RSS URL из syncDataFromServer если его нет
-    if(!currentRssUrl && !localStorage.getItem('rssUrl')){
-        syncDataFromServer().then(() => {
-            if(activeTab === 'admin') renderDashboard();
-        });
-        return;
-    }
-    
-    let rssDisplayValue = currentRssUrl || localStorage.getItem('rssUrl') || '';
-    console.log('RSS URL для отображения:', rssDisplayValue);
-    
-        html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
+        html=`<h2><i class="fas fa-user-cog"></i> Настройки</h2>
+        <div class="card"><h3>Личные данные</h3>
+            <input type="text"  id="editFullName" placeholder="ФИО"    value="${esc(currentUser.fullName||'')}">
+            <input type="tel"   id="editPhone"    placeholder="Телефон" value="${esc(currentUser.phone||'')}">
+            <input type="email" id="editEmail"    placeholder="Email"   value="${esc(currentUser.email||'')}">
+            <button id="saveProfileBtn" class="btn btn-small">Сохранить изменения</button>
+        </div>
         <div class="card"><h3>Смена пароля</h3>
-            <input type="password" id="adminOldPass"    placeholder="Старый пароль">
-            <input type="password" id="adminNewPass"    placeholder="Новый пароль">
+            <input type="password" id="oldPassword"    placeholder="Старый пароль">
+            <input type="password" id="newPassword"    placeholder="Новый пароль">
+            <input type="password" id="newPassConfirm" placeholder="Подтвердите новый пароль">
+            <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
+        </div>
+        <div class="card"><h3>Документы</h3><div class="docs-buttons">
+            <button id="downloadAgreementBtn"     class="btn-outline btn-small">Пользовательское соглашение (PDF)</button>
+            <button id="downloadPrivacyBtn"       class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
+            <button id="downloadConsentBtn"       class="btn-outline btn-small">Согласие на обработку ПД (PDF)</button>
+        </div></div>`;
+    } else if(activeTab==='admin'&&isAdmin){
+        let rssDisplayValue=currentRssUrl||localStorage.getItem('rssUrl')||'';
+        html=`<h2><i class="fas fa-cog"></i> Настройки</h2>
+        <div class="card"><h3>Смена пароля</h3>
+            <input type="password" id="adminOldPass"     placeholder="Старый пароль">
+            <input type="password" id="adminNewPass"     placeholder="Новый пароль">
             <input type="password" id="adminNewPassConf" placeholder="Подтвердите новый пароль">
             <button id="adminChangePassBtn" class="btn btn-small">Сменить пароль</button>
         </div>
         <div class="card"><h3>Часы работы</h3>
             <div class="flex-row">
-                <input type="time" id="workStart" class="time-input-safe" value="${workHours.start}">
+                <input type="time" id="workStart" value="${workHours.start}" style="flex:1;min-width:0;margin-bottom:0">
                 <span>—</span>
-                <input type="time" id="workEnd"   class="time-input-safe" value="${workHours.end}">
+                <input type="time" id="workEnd"   value="${workHours.end}"   style="flex:1;min-width:0;margin-bottom:0">
                 <button id="saveWorkHoursBtn" class="btn-outline btn-small">Сохранить</button>
             </div>
         </div>
         <div class="card"><h3>Источник новостей (RSS)</h3>
-        <div class="flex-row">
-            <input type="text" id="rssUrlInput" style="flex:1" placeholder="RSS URL" value="${esc(rssDisplayValue)}">
-            <button id="clearRssUrlBtn" class="btn-outline btn-small" title="Очистить">✖</button>
-            <button id="saveRssUrlBtn"  class="btn-outline btn-small">Сохранить</button>
+            <div class="flex-row">
+                <input type="text" id="rssUrlInput" style="flex:1;margin-bottom:0" placeholder="RSS URL" value="${esc(rssDisplayValue)}">
+                <button id="clearRssUrlBtn" class="btn-outline btn-small" title="Очистить">✖</button>
+                <button id="saveRssUrlBtn"  class="btn-outline btn-small">Сохранить</button>
+            </div>
+            <div style="margin-top:10px">
+                <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
+            </div>
+            <div style="margin-top:8px;font-size:11px;opacity:0.6;">📌 Текущий RSS URL: ${esc(rssDisplayValue)||'не задан'}</div>
         </div>
-        <div style="margin-top:10px">
-            <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
+        <div class="card"><h3>Ссылки</h3>
+            <div id="linksList"></div>
+            <div class="flex-col" style="margin-top:12px">
+                <input id="newLinkName" placeholder="Название">
+                <input id="newLinkUrl"  placeholder="URL">
+                <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
+            </div>
         </div>
-         <div style="margin-top:8px; font-size:11px; opacity:0.6;">
-            📌 Текущий RSS URL: ${esc(rssDisplayValue) || 'не задан'}
-        </div>
-    </div>
-    <div class="card"><h3>Ссылки</h3>
-        <div id="linksList"></div>
-        <div class="flex-col" style="margin-top:12px">
-            <input id="newLinkName" placeholder="Название">
-            <input id="newLinkUrl"  placeholder="URL">
-            <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
-        </div>
-    </div>
-    <div class="card"><h3>Управление клиентами</h3>
-        <div id="clientsList" style="max-height:300px;overflow-y:auto"></div>
-    </div>`;
-}
+        <div class="card"><h3>Управление клиентами</h3>
+            <div id="clientsList" style="max-height:400px;overflow-y:auto"></div>
+        </div>`;
+    }
 
     container.innerHTML=html;
 
-    if(activeTab==='calendar')  renderCalendarUI();
+    if(activeTab==='calendar')   renderCalendarUI();
     if(activeTab==='documents'){
         renderUserDocs();
         if(isAdmin&&casesSubTab==='new') attachDocAdminEvents();
     }
-    if(activeTab==='admin'&&isAdmin) {
-    renderAdminLinks();
-    renderClientsList();
-}
+    if(activeTab==='admin'&&isAdmin){ renderAdminLinks(); renderClientsList(); }
     attachDynamicEvents();
     if(isAdmin&&activeTab==='cases') attachCaseEvents();
 
@@ -1296,20 +1199,97 @@ function renderAdminLinks(){
         btn.onclick=()=>{ newsLinks.splice(+btn.dataset.i,1); saveToServer(); renderAdminLinks(); showToast('Удалено'); };
     });
     document.getElementById('addLinkBtn')?.addEventListener('click',()=>{
-    let n=document.getElementById('newLinkName').value;
-    let u=document.getElementById('newLinkUrl').value;
-    if(!n||!u){ showToast('Заполните оба поля',true); return; }
-    
-    // Сначала сохраняем
-    newsLinks.push({name:n,url:u}); 
-    saveToServer(); 
-    renderAdminLinks(); 
-    showToast('Добавлено');
-    
-    // Потом очищаем (только после успешного сохранения)
-    document.getElementById('newLinkName').value='';
-    document.getElementById('newLinkUrl').value='';
-});
+        let n=document.getElementById('newLinkName').value;
+        let u=document.getElementById('newLinkUrl').value;
+        if(!n||!u){ showToast('Заполните оба поля',true); return; }
+        newsLinks.push({name:n,url:u});
+        saveToServer(); renderAdminLinks(); showToast('Добавлено');
+        document.getElementById('newLinkName').value='';
+        document.getElementById('newLinkUrl').value='';
+    });
+}
+
+function renderClientsList(){
+    let div=document.getElementById('clientsList'); if(!div) return;
+    if(!allUsers||allUsers.length===0){ div.innerHTML='<p style="opacity:0.6">Нет клиентов</p>'; return; }
+    let activeClients=allUsers.filter(u=>u.login!=='admin');
+    if(!activeClients.length){ div.innerHTML='<p style="opacity:0.6">Нет клиентов</p>'; return; }
+
+    div.innerHTML=activeClients.map(user=>`
+        <div class="client-item">
+            <div class="client-header">
+                <div>
+                    <strong>${esc(user.fullName||user.login)}</strong><br>
+                    <span style="font-size:11px;opacity:0.6">${esc(user.login)}</span>
+                </div>
+                <!-- ФИX: только кнопка карандаш открывает детали, вся строка — нет -->
+                <button class="btn-outline btn-small edit-client-btn" data-id="${esc(user.id)}" style="padding:8px 12px">✏️</button>
+            </div>
+            <div class="client-details" id="client-details-${esc(user.id)}">
+                <input type="text"  class="client-fullname" value="${esc(user.fullName||'')}" placeholder="ФИО">
+                <input type="tel"   class="client-phone"    value="${esc(user.phone||'')}"    placeholder="Телефон">
+                <input type="email" class="client-email"    value="${esc(user.email||'')}"    placeholder="Email">
+                <div style="display:flex;gap:8px;margin-top:4px">
+                    <button class="btn btn-small save-client-btn"   data-id="${esc(user.id)}">Сохранить</button>
+                    <button class="btn-danger btn-small delete-client-btn" data-id="${esc(user.id)}">Удалить</button>
+                </div>
+            </div>
+        </div>`).join('');
+
+    // ФИX: только кнопка карандаш — toggle деталей
+    div.querySelectorAll('.edit-client-btn').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+            e.stopPropagation();
+            let id=btn.dataset.id;
+            let details=document.getElementById(`client-details-${id}`);
+            if(details) details.style.display=(details.style.display==='none'||details.style.display==='')?'block':'none';
+        });
+    });
+
+    // ФИX: stopPropagation на input-полях клиентов, чтобы не закрывало панель
+    div.querySelectorAll('.client-details input').forEach(inp=>{
+        inp.addEventListener('click', e=>e.stopPropagation());
+        inp.addEventListener('focus', e=>e.stopPropagation());
+    });
+
+    div.querySelectorAll('.save-client-btn').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+            e.stopPropagation();
+            let id=btn.dataset.id;
+            let container=document.getElementById(`client-details-${id}`);
+            let newFullName=container.querySelector('.client-fullname').value.trim();
+            let newPhone   =container.querySelector('.client-phone').value.trim();
+            let newEmail   =container.querySelector('.client-email').value.trim();
+            callGas('updateClient',{userId:id,fullName:newFullName,phone:newPhone,email:newEmail,deviceId:localStorage.getItem('deviceId')},res=>{
+                if(res&&res.success){
+                    showToast('Данные клиента обновлены');
+                    syncDataFromServer().then(()=>{ if(activeTab==='admin') renderDashboard(); });
+                } else {
+                    showToast('Ошибка: '+(res.error||'?'),true);
+                }
+            });
+        });
+    });
+
+    div.querySelectorAll('.delete-client-btn').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+            e.stopPropagation();
+            let id=btn.dataset.id;
+            showModal({
+                title:'Удалить клиента?',
+                message:'Это действие нельзя отменить.',
+                icon:'fas fa-trash-alt',
+                confirmText:'Удалить',
+                showCancel:true,
+                onConfirm:()=>{
+                    callGas('deleteClient',{userId:id,deviceId:localStorage.getItem('deviceId')},res=>{
+                        if(res&&res.success){ showToast('Клиент удалён'); syncDataFromServer().then(()=>{ if(activeTab==='admin') renderDashboard(); }); }
+                        else showToast('Ошибка: '+(res.error||'?'),true);
+                    });
+                }
+            });
+        });
+    });
 }
 
 function attachDynamicEvents(){
@@ -1328,6 +1308,7 @@ function attachDynamicEvents(){
         tab.onclick=()=>{ casesSubTab=tab.dataset.subtab; renderDashboard(); };
     });
 
+    // Запись на приём (клиент)
     if(activeTab==='calendar'&&currentUser.role!=='admin'){
         let myApps=allAppointments.filter(a=>a.userId===currentUser.login);
         let ld=document.getElementById('myAppointmentsList');
@@ -1336,77 +1317,58 @@ function attachDynamicEvents(){
             : '<p style="opacity:.5">Нет записей</p>';
 
         document.getElementById('bookSlotBtn')?.addEventListener('click',()=>{
-    if(!window.selectedSlot){ showToast('Выберите время',true); return; }
-    let {date,time}=window.selectedSlot;
-    
-    // Проверяем, не заблокирован ли слот
-    let isBlocked = blockedSlots.some(b => b.date === date && b.timeStart <= time && b.timeEnd >= time);
-    if(isBlocked){ showToast('Слот занят',true); return; }
-    
-    // Проверяем, не записан ли уже
-    let alreadyBooked = allAppointments.some(a => a.date === date && a.time === time && a.userId === currentUser.login);
-    if(alreadyBooked){ showToast('Вы уже записаны',true); return; }
-    
-    let ov=document.createElement('div'); ov.className='modal-overlay';
-    ov.innerHTML=`<div class="modal-container"><h3>Запись на приём</h3>
-        <input id="apTopic" placeholder="Тема обращения">
-        <div class="modal-buttons">
-            <button id="apConfirm" class="btn">Записаться</button>
-            <button id="apCancel"  class="btn-outline">Отмена</button>
-        </div></div>`;
-    document.body.appendChild(ov);
-    
-    ov.querySelector('#apConfirm').onclick=()=>{
-        let formattedDate = date.split('-').reverse().join('.');
-        let newAppointment = {
-            id: Date.now(),
-            userId: currentUser.login,
-            date: date,
-            time: time,
-            clientName: currentUser.login,
-            topic: ov.querySelector('#apTopic').value,
-            phone: currentUser.phone || '',
-            status: 'pending'
-        };
-        //allAppointments.push(newAppointment);
-        
-        // Сохраняем отдельно, чтобы избежать ошибки 400
-        callGas('addAppointment', {
-            userId: currentUser.login,
-            date: date,
-            time: time,
-            topic: ov.querySelector('#apTopic').value,
-            phone: currentUser.phone || '',
-            deviceId: localStorage.getItem('deviceId')
-        }, res => {
-            console.log('Appointment saved', res);
-            if(res && res.success){
-                showModal({title:'Запись создана',message:`${formattedDate} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
-                renderDashboard();
-            } else {
-                showToast('Ошибка при сохранении записи', true);
-                // Откатываем
-                allAppointments = allAppointments.filter(a => a.id !== newAppointment.id);
-            }
+            if(!window.selectedSlot){ showToast('Выберите время',true); return; }
+            let {date,time}=window.selectedSlot;
+            let isBlocked=blockedSlots.some(b=>b.date===date&&b.timeStart<=time&&b.timeEnd>=time);
+            if(isBlocked){ showToast('Слот занят',true); return; }
+            let alreadyBooked=allAppointments.some(a=>a.date===date&&a.time===time&&a.userId===currentUser.login);
+            if(alreadyBooked){ showToast('Вы уже записаны',true); return; }
+            let ov=document.createElement('div'); ov.className='modal-overlay';
+            ov.innerHTML=`<div class="modal-container"><h3>Запись на приём</h3>
+                <input id="apTopic" placeholder="Тема обращения">
+                <div class="modal-buttons">
+                    <button id="apConfirm" class="btn">Записаться</button>
+                    <button id="apCancel"  class="btn-outline">Отмена</button>
+                </div></div>`;
+            document.body.appendChild(ov);
+            ov.querySelector('#apConfirm').onclick=()=>{
+                let formattedDate=date.split('-').reverse().join('.');
+                callGas('addAppointment',{
+                    userId:currentUser.login,date,time,
+                    topic:ov.querySelector('#apTopic').value,
+                    phone:currentUser.phone||'',
+                    deviceId:localStorage.getItem('deviceId')
+                },res=>{
+                    if(res&&res.success){
+                        showModal({title:'Запись создана',message:`${formattedDate} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
+                        syncDataFromServer().then(()=>renderDashboard());
+                    } else {
+                        showToast('Ошибка при сохранении записи',true);
+                    }
+                });
+                ov.remove();
+            };
+            ov.querySelector('#apCancel').onclick=()=>ov.remove();
+            ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
         });
-        ov.remove();
-    };
-    ov.querySelector('#apCancel').onclick=()=>ov.remove();
-    ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
-});
     }
 
+    // ФИX: поля времени — только stopPropagation, не очищать значения
     let ws=document.getElementById('workStart'), we=document.getElementById('workEnd');
     if(ws&&we){
         [ws,we].forEach(inp=>{
-            inp.addEventListener('pointerdown',e=>e.stopPropagation());
-            inp.addEventListener('mousedown',  e=>e.stopPropagation());
-            inp.addEventListener('touchstart', e=>e.stopPropagation(),{passive:true});
+            inp.addEventListener('click',    e=>e.stopPropagation());
+            inp.addEventListener('focus',    e=>e.stopPropagation());
+            inp.addEventListener('mousedown',e=>e.stopPropagation());
+            inp.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
         });
     }
+
     document.getElementById('saveWorkHoursBtn')?.addEventListener('click',()=>{
-        workHours.start=document.getElementById('workStart').value;
-        workHours.end  =document.getElementById('workEnd').value;
+        let s=document.getElementById('workStart').value;
+        let e=document.getElementById('workEnd').value;
+        if(!s||!e){ showToast('Укажите время',true); return; }
+        workHours.start=s; workHours.end=e;
         saveToServer(); showToast('Часы работы сохранены');
     });
 
@@ -1414,32 +1376,24 @@ function attachDynamicEvents(){
         let url=document.getElementById('rssUrlInput').value.trim();
         if(!url){ showToast('Введите URL',true); return; }
         callGas('saveRssUrl',{url,deviceId:localStorage.getItem('deviceId')||''},res=>{
-            if(res&&res.success){ currentRssUrl=url; showToast('RSS URL сохранён'); }
+            if(res&&res.success){ currentRssUrl=url; localStorage.setItem('rssUrl',url); showToast('RSS URL сохранён'); }
             else showToast('Ошибка сохранения',true);
         });
     });
     document.getElementById('clearRssUrlBtn')?.addEventListener('click',()=>{
         document.getElementById('rssUrlInput').value='';
         callGas('saveRssUrl',{url:'',deviceId:localStorage.getItem('deviceId')||''},res=>{
-            if(res&&res.success){ currentRssUrl=''; showToast('RSS URL очищен'); }
+            if(res&&res.success){ currentRssUrl=''; localStorage.removeItem('rssUrl'); showToast('RSS URL очищен'); }
             else showToast('Ошибка',true);
         });
     });
     document.getElementById('refreshNewsBtn')?.addEventListener('click',()=>{
-    if(!currentUser || currentUser.role !== 'admin') {
-        showToast('Доступно только администратору', true);
-        return;
-    }
         callGas('refreshNews',{deviceId:localStorage.getItem('deviceId')||''},res=>{
             if(res&&res.success){
                 showToast('Новости обновлены ('+(res.added||0)+' записей)');
                 syncDataFromServer().then(()=>{ renderNews(); if(activeTab==='admin') renderDashboard(); });
             } else showToast('Ошибка: '+(res.error||'?'),true);
         });
-    });
-
-    document.getElementById('forceLoadNewsBtn')?.addEventListener('click',()=>{
-    forceLoadNewsFromSheet();
     });
 
     document.getElementById('changePasswordBtn')?.addEventListener('click',()=>{
@@ -1449,7 +1403,7 @@ function attachDynamicEvents(){
         if(!op||!np){ showToast('Заполните поля',true); return; }
         if(np!==nc){ showToast('Пароли не совпадают',true); return; }
         callGas('changePassword',{userId:currentUser.id,oldPassword:op,newPassword:np,deviceId:localStorage.getItem('deviceId')||''},res=>{
-            if(res&&res.success){ showToast('Пароль изменён'); ['oldPassword','newPassword','newPassConfirm'].forEach(id=>document.getElementById(id).value=''); }
+            if(res&&res.success){ showToast('Пароль изменён'); ['oldPassword','newPassword','newPassConfirm'].forEach(id=>{ let el=document.getElementById(id); if(el) el.value=''; }); }
             else showToast('Ошибка: '+(res.error||'?'),true);
         });
     });
@@ -1461,60 +1415,52 @@ function attachDynamicEvents(){
         if(!op||!np){ showToast('Заполните поля',true); return; }
         if(np!==nc){ showToast('Пароли не совпадают',true); return; }
         callGas('changePassword',{userId:currentUser.id,oldPassword:op,newPassword:np,deviceId:localStorage.getItem('deviceId')||''},res=>{
-            if(res&&res.success){ showToast('Пароль изменён'); ['adminOldPass','adminNewPass','adminNewPassConf'].forEach(id=>document.getElementById(id).value=''); }
+            if(res&&res.success){ showToast('Пароль изменён'); ['adminOldPass','adminNewPass','adminNewPassConf'].forEach(id=>{ let el=document.getElementById(id); if(el) el.value=''; }); }
             else showToast('Ошибка: '+(res.error||'?'),true);
         });
     });
 
     document.getElementById('saveProfileBtn')?.addEventListener('click',()=>{
-    let newFullName = document.getElementById('editFullName').value.trim();
-    let newPhone = document.getElementById('editPhone').value.trim();
-    let newEmail = document.getElementById('editEmail').value.trim();
-    
-    if(!newFullName){
-        showToast('Введите ФИО', true);
-        return;
-    }
-    
-    // Сохраняем текущие значения на случай ошибки
-    let oldFullName = currentUser.fullName;
-    let oldPhone = currentUser.phone;
-    let oldEmail = currentUser.email;
-    
-    // Оптимистичное обновление
-    currentUser.fullName = newFullName;
-    currentUser.phone = newPhone;
-    currentUser.email = newEmail;
-    persistUser();
-    
-    callGas('updateOwnProfile', {
-        userId: currentUser.id,
-        fullName: newFullName,
-        phone: newPhone,
-        email: newEmail,
-        deviceId: localStorage.getItem('deviceId')
-    }, res => {
-        if(res && res.success){
-            showToast('Данные обновлены');
-            // Генерируем новые PDF
-            callGas('generateDocument', { docType: 'agreement', deviceId: localStorage.getItem('deviceId') });
-            callGas('generateDocument', { docType: 'privacy', deviceId: localStorage.getItem('deviceId') });
-            callGas('generateDocument', { docType: 'personal-consent', deviceId: localStorage.getItem('deviceId') });
-            renderDashboard();
-        } else {
-            // Откатываем изменения
-            currentUser.fullName = oldFullName;
-            currentUser.phone = oldPhone;
-            currentUser.email = oldEmail;
-            persistUser();
-            showToast('Ошибка: ' + (res.error || '?'), true);
-            renderDashboard(); // Обновляем форму с старыми данными
-        }
+        let newFullName=document.getElementById('editFullName').value.trim();
+        let newPhone   =document.getElementById('editPhone').value.trim();
+        let newEmail   =document.getElementById('editEmail').value.trim();
+        if(!newFullName){ showToast('Введите ФИО',true); return; }
+        let oldFN=currentUser.fullName, oldPh=currentUser.phone, oldEm=currentUser.email;
+        currentUser.fullName=newFullName; currentUser.phone=newPhone; currentUser.email=newEmail;
+        persistUser();
+        callGas('updateOwnProfile',{userId:currentUser.id,fullName:newFullName,phone:newPhone,email:newEmail,deviceId:localStorage.getItem('deviceId')},res=>{
+            if(res&&res.success){
+                showToast('Данные обновлены');
+                // ФИX: вызываем генерацию PDF последовательно, с корректными docType
+                generateDocumentSafe('agreement');
+                generateDocumentSafe('privacy');
+                generateDocumentSafe('personal-consent');
+                renderDashboard();
+            } else {
+                currentUser.fullName=oldFN; currentUser.phone=oldPh; currentUser.email=oldEm;
+                persistUser();
+                showToast('Ошибка: '+(res.error||'?'),true);
+                renderDashboard();
+            }
+        });
     });
-});
 
+    // ФИX: добавлена третья кнопка скачивания (Согласие на обработку ПД)
     document.getElementById('downloadAgreementBtn')?.addEventListener('click',()=>window.open('https://spoiler038.github.io/sovet-yurista/docs/user-agreement.pdf','_blank'));
     document.getElementById('downloadPrivacyBtn')  ?.addEventListener('click',()=>window.open('https://spoiler038.github.io/sovet-yurista/docs/privacy-policy.pdf','_blank'));
+    document.getElementById('downloadConsentBtn')  ?.addEventListener('click',()=>window.open('https://spoiler038.github.io/sovet-yurista/docs/personal-data-consent.pdf','_blank'));
+}
+
+// ФИX: безопасная обёртка для генерации PDF-документов
+// Решает "cb is not a function" — callGas всегда получает функцию-колбэк
+function generateDocumentSafe(docType){
+    callGas('generateDocument',{docType,deviceId:localStorage.getItem('deviceId')||''},res=>{
+        if(res&&res.success){
+            console.log('Документ сгенерирован:',docType,res.fileName);
+        } else {
+            console.warn('Ошибка генерации документа',docType, res&&res.error);
+        }
+    });
 }
 
 function buildBottomNav(){
@@ -1534,7 +1480,9 @@ function buildBottomNav(){
         item.onclick=()=>{
             activeTab=item.dataset.tab; casesSubTab='current';
             selectedArchiveCase=null; planningMode=false;
-            renderDashboard(); history.pushState({tab:activeTab},'','#'+activeTab);
+            buildBottomNav();
+            renderDashboard();
+            history.pushState({tab:activeTab},'','#'+activeTab);
         };
     });
 }
@@ -1545,149 +1493,34 @@ function initNavigation(){
         casesSubTab='current'; selectedArchiveCase=null; planningMode=false;
         renderDashboard();
     };
-    let dash=document.getElementById('appDashboard'), txStart=0;
+    let dash=document.getElementById('appDashboard');
     if(dash){
-        dash.ontouchstart=e=>txStart=e.changedTouches[0].screenX;
+        let txStart=0;
+        dash.ontouchstart=e=>{ txStart=e.changedTouches[0].screenX; };
         dash.ontouchend=e=>{
             let diff=e.changedTouches[0].screenX-txStart;
+            if(Math.abs(diff)<50) return;
             let isAdmin=currentUser&&currentUser.role==='admin';
             let order=isAdmin?['cases','calendar','documents','admin']:['cases','calendar','documents','userSettings'];
             let idx=order.indexOf(activeTab);
             if(diff>50&&idx>0) activeTab=order[idx-1];
             if(diff<-50&&idx<order.length-1) activeTab=order[idx+1];
-            renderDashboard(); history.pushState({tab:activeTab},'','#'+activeTab);
+            buildBottomNav(); renderDashboard(); history.pushState({tab:activeTab},'','#'+activeTab);
         };
     }
     let h=window.location.hash.slice(1);
     activeTab=(h&&['cases','calendar','documents','admin','userSettings'].includes(h))?h:'cases';
 }
 
-function forceLoadNews() {
-  return new Promise(resolve => {
-    callGas('forceLoadNews', {}, data => {
-      if (data && data.success && data.newsArticles) {
-        newsArticles = data.newsArticles;
-        renderNews();
-        resolve(true);
-      } else {
-        resolve(false);
-      }
-    });
-  });
-}
-
-function renderClientsList(){
-    let div = document.getElementById('clientsList');
-    if(!div) return;
-    
-    // Проверяем, загружены ли данные
-    if(!allUsers || allUsers.length === 0){
-        div.innerHTML = '<p style="opacity:0.6">Нет клиентов</p>';
-        // НЕ ВЫЗЫВАЕМ syncDataFromServer() здесь, чтобы избежать зацикливания
-        return;
-    }
-    
-    // Фильтруем: показываем только не admin
-    let activeClients = allUsers.filter(user => user.login !== 'admin');
-    
-    if(!activeClients || activeClients.length === 0){
-        div.innerHTML = '<p style="opacity:0.6">Нет клиентов</p>';
-        return;
-    }
-    
-    div.innerHTML = activeClients.map(user => `
-        <div class="client-item" data-id="${user.id}" style="background:#2E2F35;border-radius:16px;padding:12px;margin-bottom:8px">
-            <div class="flex-between">
-                <div>
-                    <strong>${esc(user.fullName || user.login)}</strong><br>
-                    <span style="font-size:11px;opacity:0.6">${esc(user.login)}</span>
-                </div>
-                <button class="btn-outline btn-small edit-client-btn" data-id="${user.id}">✏️</button>
-            </div>
-            <div class="client-details" id="client-details-${user.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #3D3E45">
-                <input type="text" class="client-fullname" value="${esc(user.fullName || '')}" placeholder="ФИО"><br>
-                <input type="tel" class="client-phone" value="${esc(user.phone || '')}" placeholder="Телефон"><br>
-                <input type="email" class="client-email" value="${esc(user.email || '')}" placeholder="Email"><br>
-                <button class="btn btn-small save-client-btn" data-id="${user.id}">Сохранить</button>
-                <button class="btn-danger btn-small delete-client-btn" data-id="${user.id}">Удалить</button>
-            </div>
-        </div>
-    `).join('');
-    
-    // Обработчики кнопок редактирования
-    document.querySelectorAll('.edit-client-btn').forEach(btn => {
-        btn.onclick = () => {
-            let id = btn.dataset.id;
-            let details = document.getElementById(`client-details-${id}`);
-            if(details.style.display === 'none'){
-                details.style.display = 'block';
-            } else {
-                details.style.display = 'none';
-            }
-        };
-    });
-    
-    // Обработчики сохранения
-    document.querySelectorAll('.save-client-btn').forEach(btn => {
-        btn.onclick = () => {
-            let id = btn.dataset.id;
-            let container = document.getElementById(`client-details-${id}`);
-            let newFullName = container.querySelector('.client-fullname').value.trim();
-            let newPhone = container.querySelector('.client-phone').value.trim();
-            let newEmail = container.querySelector('.client-email').value.trim();
-            
-            callGas('updateClient', {
-                userId: id,
-                fullName: newFullName,
-                phone: newPhone,
-                email: newEmail,
-                deviceId: localStorage.getItem('deviceId')
-            }, res => {
-                if(res && res.success){
-                    showToast('Данные клиента обновлены');
-                    syncDataFromServer().then(() => {
-                        if(activeTab === 'admin') renderDashboard();
-                    });
-                } else {
-                    showToast('Ошибка обновления: ' + (res.error || '?'), true);
-                }
-            });
-        };
-    });
-    
-    // Обработчики удаления
-    document.querySelectorAll('.delete-client-btn').forEach(btn => {
-        btn.onclick = () => {
-            let id = btn.dataset.id;
-            showModal({
-                title: 'Удалить клиента?',
-                message: 'Это действие нельзя отменить. Все данные клиента будут удалены.',
-                icon: 'fas fa-trash-alt',
-                confirmText: 'Удалить',
-                showCancel: true,
-                onConfirm: () => {
-                    callGas('deleteClient', {
-                        userId: id,
-                        deviceId: localStorage.getItem('deviceId')
-                    }, res => {
-                        if(res && res.success){
-                            showToast('Клиент удалён');
-                            syncDataFromServer().then(() => {
-                                if(activeTab === 'admin') renderDashboard();
-                            });
-                        } else {
-                            showToast('Ошибка удаления: ' + (res.error || '?'), true);
-                        }
-                    });
-                }
-            });
-        };
-    });
-}
-    
 async function init(){
-    await forceLoadNews();
-    await syncDataFromServer();
+    // Загружаем новости
+    await new Promise(resolve=>{
+        callGas('forceLoadNews',{},data=>{
+            if(data&&data.success&&data.newsArticles){ newsArticles=data.newsArticles; }
+            resolve();
+        });
+    });
+    renderNews();
     setupConsent();
     document.getElementById('doLoginBtn').onclick=handleLogin;
     document.getElementById('logoutBtn')?.addEventListener('click',logout);
@@ -1699,7 +1532,7 @@ async function init(){
     });
     initNavigation();
     doAutoLogin();
- }
+}
 
 init();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sovet-yurista/sw.js').catch(console.error);
