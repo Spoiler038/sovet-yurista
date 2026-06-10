@@ -949,15 +949,6 @@ function renderCalendarUI(){
 //  РЕНДЕР ДАШБОРДА
 // ============================================================
 function renderDashboard(){
-    if(activeTab === 'admin' && isAdmin && currentRssUrl === ''){
-    // Повторно загружаем RSS URL из syncDataFromServer
-    callGas('getAllData', { deviceId: localStorage.getItem('deviceId')||'' }, data => {
-        if(data && data.success && data.rss_feed_url){
-            currentRssUrl = data.rss_feed_url;
-            renderDashboard(); // обновляем отображение
-        }
-    });
-}
     if(!currentUser) return;
     if(typeof currentRssUrl === 'undefined' || currentRssUrl === null) currentRssUrl = '';
     document.getElementById('userAvatar').textContent=currentUser.login.charAt(0).toUpperCase();
@@ -966,8 +957,17 @@ function renderDashboard(){
 
     let container=document.getElementById('mainContent');
     let isAdmin=(currentUser.role==='admin');
-    let html='';
-
+    
+    if(activeTab === 'admin' && isAdmin && currentRssUrl === ''){
+    // Повторно загружаем RSS URL из syncDataFromServer
+    callGas('getAllData', { deviceId: localStorage.getItem('deviceId')||'' }, data => {
+        if(data && data.success && data.rss_feed_url){
+            currentRssUrl = data.rss_feed_url;
+            renderDashboard(); // обновляем отображение
+        }
+    });
+    }
+    let html='';    
     if(activeTab==='cases'){
         if(isAdmin){
             html=`<div class="tabs">
@@ -1428,18 +1428,16 @@ function renderClientsList(){
     let div = document.getElementById('clientsList');
     if(!div) return;
     
-    // Фильтруем: показываем только active === true и не admin
-    let activeClients = allUsers.filter(user => 
-        user.login !== 'admin'  // исключаем администратора
-    );
+    // Фильтруем: показываем только не admin
+    let activeClients = allUsers.filter(user => user.login !== 'admin');
     
     if(!activeClients || activeClients.length === 0){
         div.innerHTML = '<p style="opacity:0.6">Нет клиентов</p>';
         return;
     }
     
-          
-    div.innerHTML = allUsers.map(user => `
+    // Используем activeClients, а не allUsers
+    div.innerHTML = activeClients.map(user => `
         <div class="client-item" data-id="${user.id}" style="background:#2E2F35;border-radius:16px;padding:12px;margin-bottom:8px">
             <div class="flex-between">
                 <div>
@@ -1455,7 +1453,7 @@ function renderClientsList(){
                 <button class="btn btn-small save-client-btn" data-id="${user.id}">Сохранить</button>
                 <button class="btn-danger btn-small delete-client-btn" data-id="${user.id}">Удалить</button>
             </div>
-         </div>
+        </div>
     `).join('');
     
     // Обработчики кнопок редактирования
