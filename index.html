@@ -348,6 +348,8 @@ function syncDataFromServer(){
                 if(!/^\d{2}:\d{2}$/.test(workHours.start)) workHours.start='09:00';
                 if(!/^\d{2}:\d{2}$/.test(workHours.end))   workHours.end='18:00';
                 currentRssUrl   = data.rss_feed_url || '';
+                console.log('RSS URL из GAS:', currentRssUrl);
+                if(currentRssUrl) localStorage.setItem('rssUrl', currentRssUrl);
                 resolve();
             } else if(data&&data.error==='Unauthorized'){
                 localStorage.removeItem('deviceId');
@@ -1093,9 +1095,9 @@ function renderDashboard(){
         <button id="downloadPrivacyBtn"   class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
     </div></div>`;
     }else if(activeTab==='admin'&&isAdmin){
-        // Принудительно получаем свежее значение
-        let rssDisplayValue = currentRssUrl || '';
-        console.log('RSS URL для отображения:', rssDisplayValue);
+    // Берём значение из переменной или из localStorage
+    let rssDisplayValue = currentRssUrl || localStorage.getItem('rssUrl') || '';
+    console.log('RSS URL для отображения:', rssDisplayValue);
     
         html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
         <div class="card"><h3>Смена пароля</h3>
