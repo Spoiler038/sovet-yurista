@@ -353,6 +353,7 @@ function syncDataFromServer(){
                 resolve();
             } else if(data&&data.error==='Unauthorized'){
                 localStorage.removeItem('deviceId');
+                currentRssUrl = '';
                 showLoginScreen(); showToast('Выполните вход или зарегистрируйтесь'); resolve();
             } else { resolve(); }
         });
@@ -1490,6 +1491,7 @@ function attachDynamicEvents(){
             // Генерируем новые PDF
             callGas('generateDocument', { docType: 'agreement', deviceId: localStorage.getItem('deviceId') });
             callGas('generateDocument', { docType: 'privacy', deviceId: localStorage.getItem('deviceId') });
+            callGas('generateDocument', { docType: 'personal-consent', deviceId: localStorage.getItem('deviceId') });
             renderDashboard();
         } else {
             // Откатываем изменения
@@ -1581,9 +1583,7 @@ function renderClientsList(){
     }
     
     // Фильтруем: показываем только не admin и активных
-    let activeClients = allUsers.filter(user => 
-        user.login !== 'admin' && user.active !== false
-    );
+    let activeClients = allUsers.filter(user => user.login !== 'admin');
     
     if(!activeClients || activeClients.length === 0){
         div.innerHTML = '<p style="opacity:0.6">Нет клиентов</p>';
