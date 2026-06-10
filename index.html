@@ -358,11 +358,16 @@ function syncDataFromServer(){
 }
 
 function saveToServer(){
+    // Проверяем, что данные не слишком большие
+    let blockedSlotsStr = JSON.stringify(blockedSlots);
+    if(blockedSlotsStr.length > 8000) {
+        console.warn('blockedSlots слишком большой, возможно ошибка');
+    }
     callGas('saveAllData',{
         cases:        JSON.stringify(allCases),
         documents:    JSON.stringify(allDocuments),
         appointments: JSON.stringify(allAppointments),
-        blockedSlots: JSON.stringify(blockedSlots),
+        blockedSlots: blockedSlotsStr,
         newsArticles: JSON.stringify(newsArticles),
         newsLinks:    JSON.stringify(newsLinks),
         workHours:    JSON.stringify(workHours),
@@ -580,22 +585,32 @@ function attachCaseEvents(){
     });
 
     document.getElementById('addCaseBtn')?.addEventListener('click',()=>{
-        let ov=document.createElement('div'); ov.className='modal-overlay';
-        ov.innerHTML=`<div class="modal-container" style="width:92%;max-width:440px;text-align:left">
-            <h3 style="text-align:center;margin-bottom:18px">Новое дело</h3>
-            <input id="ncTitle" placeholder="Название дела">
-            <label style="font-size:12px;opacity:.65;margin:-8px 0 4px 8px;display:block">Заявитель</label>
-            <div id="ncClaimantWrap"></div>
-            <label style="font-size:12px;opacity:.65;margin:-4px 0 4px 8px;display:block">Ответчик</label>
-            <div id="ncDefendantWrap"></div>
-            <select id="ncCat" style="margin-top:4px"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select>
-            <div class="modal-buttons">
-                <button id="ncCreate" class="btn">Создать</button>
-                <button id="ncCancel" class="btn-outline">Отмена</button>
-            </div></div>`;
-        document.body.appendChild(ov);
-        ov.querySelector('#ncClaimantWrap').appendChild(createComboField('ncClaimant','Введите или выберите',allUsers));
-        ov.querySelector('#ncDefendantWrap').appendChild(createComboField('ncDefendant','Введите или выберите',allUsers));
+    // Принудительно обновляем список пользователей перед созданием модального окна
+    if(allUsers.length === 0){
+        showToast('Список пользователей загружается, попробуйте еще раз', true);
+        return;
+    }
+    
+    let ov=document.createElement('div'); ov.className='modal-overlay';
+    ov.innerHTML=`<div class="modal-container" style="width:92%;max-width:440px;text-align:left">
+        <h3 style="text-align:center;margin-bottom:18px">Новое дело</h3>
+        <input id="ncTitle" placeholder="Название дела">
+        <label style="font-size:12px;opacity:.65;margin:-8px 0 4px 8px;display:block">Заявитель</label>
+        <div id="ncClaimantWrap"></div>
+        <label style="font-size:12px;opacity:.65;margin:-4px 0 4px 8px;display:block">Ответчик</label>
+        <div id="ncDefendantWrap"></div>
+        <select id="ncCat" style="margin-top:4px"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select>
+        <div class="modal-buttons">
+            <button id="ncCreate" class="btn">Создать</button>
+            <button id="ncCancel" class="btn-outline">Отмена</button>
+        </div></div>`;
+    document.body.appendChild(ov);
+    
+    // Создаём combo поля с актуальным списком пользователей
+    let claimantWrap = ov.querySelector('#ncClaimantWrap');
+    let defendantWrap = ov.querySelector('#ncDefendantWrap');
+    claimantWrap.appendChild(createComboField('ncClaimant','Введите или выберите',allUsers));
+    defendantWrap.appendChild(createComboField('ncDefendant','Введите или выберите',allUsers));
         ov.querySelector('#ncCreate').onclick=()=>{
             let title=ov.querySelector('#ncTitle').value.trim();
             if(!title){ showToast('Введите название',true); return; }
@@ -728,42 +743,44 @@ function renderCalendarUI(){
     }
 
     function showClientSlots(date){
-        let s=parseInt((workHours.start||'09:00').split(':')[0]);
-        let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
-        let slots=[];
-        
-        for(let h=s; h<e; h++){
-            let timeStart = String(h).padStart(2,'0') + ':00';
-            
-            let isBlocked = blockedSlots.some(b => {
-                if(b.date !== date) return false;
-                return (timeStart >= b.timeStart && timeStart < b.timeEnd);
-            });
-            
-            if(!isBlocked){
-                slots.push(timeStart);
-            }
+    // Сохраняем текущую выбранную дату в глобальную переменную
+    window.currentSelectedDate = date;
+    
+    let s=parseInt((workHours.start||'09:00').split(':')[0]);
+    let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
+    let slots=[];
+    
+    for(let h=s; h<e; h++){
+        let timeStart = String(h).padStart(2,'0') + ':00';
+        let isBlocked = blockedSlots.some(b => {
+            if(b.date !== date) return false;
+            return (timeStart >= b.timeStart && timeStart < b.timeEnd);
+        });
+        if(!isBlocked){
+            slots.push(timeStart);
         }
-        
-        let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
-        slots.forEach(t=>{
-            let bk=allAppointments.some(a=>a.date===date && a.time===t);
-            slotsHtml+=`<div class="slot ${bk?'booked':'free'}" data-time="${t}">${t} - ${(parseInt(t)+1)}:00 ${bk?'❌':'✅'}</div>`;
-        });
-        slotsHtml+='</div></div>';
-        document.getElementById('timeSlotsArea').innerHTML=slotsHtml;
-        
-        document.querySelectorAll('.slot.free').forEach(slot=>{
-            slot.addEventListener('click',function(e){
-                e.stopPropagation();
-                document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
-                window.selectedSlot={date,time:this.dataset.time};
-                this.style.border='2px solid #FAC643'; 
-                this.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
-                showToast('Выбрано: '+this.dataset.time);
-            });
-        });
     }
+    
+    let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
+    slots.forEach(t=>{
+        let bk=allAppointments.some(a=>a.date===date && a.time===t);
+        slotsHtml+=`<div class="slot ${bk?'booked':'free'}" data-time="${t}">${t} - ${(parseInt(t)+1)}:00 ${bk?'❌':'✅'}</div>`;
+    });
+    slotsHtml+='</div></div>';
+    document.getElementById('timeSlotsArea').innerHTML=slotsHtml;
+    
+    document.querySelectorAll('.slot.free').forEach(slot=>{
+        slot.addEventListener('click',function(e){
+            e.stopPropagation();
+            document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
+            // Используем сохранённую дату, а не новую
+            window.selectedSlot={date: window.currentSelectedDate, time:this.dataset.time};
+            this.style.border='2px solid #FAC643'; 
+            this.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
+            showToast('Выбрано: '+this.dataset.time);
+        });
+    });
+}
 
     function showPlanPanel(date){
         let area=document.getElementById('timeSlotsArea');
@@ -920,15 +937,14 @@ if(addBtn){
     }
 
    let todayDay = document.querySelector(`.cal-day[data-date="${todayStr}"]`);
-if(todayDay){
-    todayDay.classList.add('selected');
-    loadDate(todayStr);
-} else {
-    // Если сегодня нет в текущем месяце (например, 31 число), выбираем первый день
-    let firstDay = document.querySelector('.cal-day');
-    if(firstDay){ 
-        firstDay.classList.add('selected'); 
-        loadDate(firstDay.dataset.date); 
+    if(todayDay){
+        todayDay.classList.add('selected');
+        loadDate(todayStr);
+    } else {
+        let firstDay = document.querySelector('.cal-day');
+        if(firstDay){ 
+            firstDay.classList.add('selected'); 
+            loadDate(firstDay.dataset.date); 
         }
     }
 }
@@ -1066,7 +1082,11 @@ function renderDashboard(){
             <button id="downloadPrivacyBtn"   class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
         </div></div>`;
     } else if(activeTab==='admin'&&isAdmin){
-        html=`<h2><i class="fas fa-cog"></i> Настройки</h2>
+        // Принудительно получаем свежее значение
+        let rssDisplayValue = currentRssUrl || '';
+        console.log('RSS URL для отображения:', rssDisplayValue);
+    
+        html = `<h2><i class="fas fa-cog"></i> Настройки</h2>
         <div class="card"><h3>Смена пароля</h3>
             <input type="password" id="adminOldPass"    placeholder="Старый пароль">
             <input type="password" id="adminNewPass"    placeholder="Новый пароль">
@@ -1082,18 +1102,18 @@ function renderDashboard(){
             </div>
         </div>
         <div class="card"><h3>Источник новостей (RSS)</h3>
-    <div class="flex-row">
-        <input type="text" id="rssUrlInput" style="flex:1" placeholder="RSS URL" value="${esc(currentRssUrl)}">
-        <button id="clearRssUrlBtn" class="btn-outline btn-small" title="Очистить">✖</button>
-        <button id="saveRssUrlBtn"  class="btn-outline btn-small">Сохранить</button>
+        <div class="flex-row">
+            <input type="text" id="rssUrlInput" style="flex:1" placeholder="RSS URL" value="${esc(rssDisplayValue)}">
+            <button id="clearRssUrlBtn" class="btn-outline btn-small" title="Очистить">✖</button>
+            <button id="saveRssUrlBtn"  class="btn-outline btn-small">Сохранить</button>
+        </div>
+        <div style="margin-top:10px">
+            <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
+        </div>
+        <div style="margin-top:8px; font-size:11px; opacity:0.6;">
+            📌 Текущий RSS URL: ${esc(rssDisplayValue) || 'не задан'}
     </div>
-    <div style="margin-top:10px">
-        <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
-    </div>
-    <div style="margin-top:8px; font-size:11px; opacity:0.6;">
-        📌 Текущий RSS URL: ${esc(currentRssUrl) || 'не задан'}
-    </div>
-</div>
+</div>`;
         <div class="card"><h3>Ссылки</h3>
             <div id="linksList"></div>
             <div class="flex-col" style="margin-top:12px">
@@ -1102,6 +1122,9 @@ function renderDashboard(){
                 <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
             </div>
         </div>`;
+        <div class="card"><h3>Управление клиентами</h3>
+            <div id="clientsList" style="max-height:300px;overflow-y:auto"></div>
+        </div>
     }
 
     container.innerHTML=html;
@@ -1146,12 +1169,19 @@ function renderAdminLinks(){
         btn.onclick=()=>{ newsLinks.splice(+btn.dataset.i,1); saveToServer(); renderAdminLinks(); showToast('Удалено'); };
     });
     document.getElementById('addLinkBtn')?.addEventListener('click',()=>{
-        let n=document.getElementById('newLinkName').value;
-        let u=document.getElementById('newLinkUrl').value;
-        if(!n||!u){ showToast('Заполните оба поля',true); return; }
-        newsLinks.push({name:n,url:u}); saveToServer(); renderAdminLinks(); showToast('Добавлено');
-        document.getElementById('newLinkName').value='';
-        document.getElementById('newLinkUrl').value='';
+    let n=document.getElementById('newLinkName').value;
+    let u=document.getElementById('newLinkUrl').value;
+    if(!n||!u){ showToast('Заполните оба поля',true); return; }
+    
+    // Сначала сохраняем
+    newsLinks.push({name:n,url:u}); 
+    saveToServer(); 
+    renderAdminLinks(); 
+    showToast('Добавлено');
+    
+    // Потом очищаем (только после успешного сохранения)
+    document.getElementById('newLinkName').value='';
+    document.getElementById('newLinkUrl').value='';
     });
 }
 
@@ -1193,20 +1223,22 @@ function attachDynamicEvents(){
                 </div></div>`;
             document.body.appendChild(ov);
             ov.querySelector('#apConfirm').onclick=()=>{
-                allAppointments.push({
-                    id:Date.now(),
-                    userId:currentUser.login,
-                    date,
-                    time,
-                    clientName:currentUser.login,
-                    topic:ov.querySelector('#apTopic').value,
-                    phone:currentUser.phone || '',
-                    status:'pending'
-                });
-                saveToServer(); ov.remove();
-                showModal({title:'Запись создана',message:`${date} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
-                renderDashboard();
-            };
+            // Форматируем дату из YYYY-MM-DD в DD.MM.YYYY
+            let formattedDate = date.split('-').reverse().join('.');
+            allAppointments.push({
+                id:Date.now(),
+                userId:currentUser.login,
+                date,
+                time,
+                clientName:currentUser.login,
+                topic:ov.querySelector('#apTopic').value,
+                phone:currentUser.phone || '',
+                status:'pending'
+            });
+            saveToServer(); ov.remove();
+            showModal({title:'Запись создана',message:`${formattedDate} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
+            renderDashboard();
+        };
             ov.querySelector('#apCancel').onclick=()=>ov.remove();
             ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
         });
@@ -1345,6 +1377,111 @@ function forceLoadNews() {
   });
 }
 
+function renderClientsList(){
+    let div = document.getElementById('clientsList');
+    if(!div) return;
+    
+    if(!allUsers || allUsers.length === 0){
+        div.innerHTML = '<p style="opacity:0.6">Нет клиентов</p>';
+        return;
+    }
+    
+    div.innerHTML = allUsers.map(user => `
+        <div class="client-item" data-id="${user.id}" style="background:#2E2F35;border-radius:16px;padding:12px;margin-bottom:8px">
+            <div class="flex-between">
+                <div>
+                    <strong>${esc(user.fullName || user.login)}</strong><br>
+                    <span style="font-size:11px;opacity:0.6">${esc(user.login)}</span>
+                </div>
+                <button class="btn-outline btn-small edit-client-btn" data-id="${user.id}">✏️</button>
+            </div>
+            <div class="client-details" id="client-details-${user.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #3D3E45">
+                <input type="text" class="client-fullname" value="${esc(user.fullName || '')}" placeholder="ФИО"><br>
+                <input type="tel" class="client-phone" value="${esc(user.phone || '')}" placeholder="Телефон"><br>
+                <input type="email" class="client-email" value="${esc(user.email || '')}" placeholder="Email"><br>
+                <button class="btn btn-small save-client-btn" data-id="${user.id}">Сохранить</button>
+                <button class="btn-danger btn-small delete-client-btn" data-id="${user.id}">Удалить</button>
+            </div>
+        </div>
+    `).join('');
+    
+    // Обработчики кнопок редактирования
+    document.querySelectorAll('.edit-client-btn').forEach(btn => {
+        btn.onclick = () => {
+            let id = btn.dataset.id;
+            let details = document.getElementById(`client-details-${id}`);
+            if(details.style.display === 'none'){
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+        };
+    });
+    
+    // Обработчики сохранения
+    document.querySelectorAll('.save-client-btn').forEach(btn => {
+        btn.onclick = () => {
+            let id = btn.dataset.id;
+            let container = document.getElementById(`client-details-${id}`);
+            let newFullName = container.querySelector('.client-fullname').value.trim();
+            let newPhone = container.querySelector('.client-phone').value.trim();
+            let newEmail = container.querySelector('.client-email').value.trim();
+            
+            callGas('updateClient', {
+                userId: id,
+                fullName: newFullName,
+                phone: newPhone,
+                email: newEmail,
+                deviceId: localStorage.getItem('deviceId')
+            }, res => {
+                if(res && res.success){
+                    showToast('Данные клиента обновлены');
+                    syncDataFromServer().then(() => {
+                        if(activeTab === 'admin') renderDashboard();
+                    });
+                } else {
+                    showToast('Ошибка обновления: ' + (res.error || '?'), true);
+                }
+            });
+        };
+    });
+    
+    // Обработчики удаления
+    document.querySelectorAll('.delete-client-btn').forEach(btn => {
+        btn.onclick = () => {
+            let id = btn.dataset.id;
+            showModal({
+                title: 'Удалить клиента?',
+                message: 'Это действие нельзя отменить. Все данные клиента будут удалены.',
+                icon: 'fas fa-trash-alt',
+                confirmText: 'Удалить',
+                showCancel: true,
+                onConfirm: () => {
+                    callGas('deleteClient', {
+                        userId: id,
+                        deviceId: localStorage.getItem('deviceId')
+                    }, res => {
+                        if(res && res.success){
+                            showToast('Клиент удалён');
+                            syncDataFromServer().then(() => {
+                                if(activeTab === 'admin') renderDashboard();
+                            });
+                        } else {
+                            showToast('Ошибка удаления: ' + (res.error || '?'), true);
+                        }
+                    });
+                }
+            });
+        };
+    });
+}
+
+// Добавьте вызов в renderDashboard() после renderAdminLinks():
+if(activeTab==='admin'&&isAdmin) {
+    renderAdminLinks();
+    renderClientsList(); // Добавьте эту строку
+}
+    
 async function init(){
     await forceLoadNews();
     await syncDataFromServer();
