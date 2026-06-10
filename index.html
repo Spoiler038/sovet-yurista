@@ -360,21 +360,68 @@ function syncDataFromServer(){
 }
 
 function saveToServer(){
-    // Проверяем, что данные не слишком большие
-    let blockedSlotsStr = JSON.stringify(blockedSlots);
-    if(blockedSlotsStr.length > 8000) {
-        console.warn('blockedSlots слишком большой, возможно ошибка');
-    }
+    // Разделяем сохранение на части, чтобы избежать превышения лимита URL
+    let deviceId = localStorage.getItem('deviceId')||'';
+    
+    // Сохраняем дела
     callGas('saveAllData',{
-        cases:        JSON.stringify(allCases),
-        documents:    JSON.stringify(allDocuments),
+        cases: JSON.stringify(allCases),
+        documents: '[]',
+        appointments: '[]',
+        blockedSlots: '[]',
+        newsArticles: '[]',
+        newsLinks: '[]',
+        workHours: '{}',
+        deviceId: deviceId
+    }, r=>console.log('cases saved',r));
+    
+    // Сохраняем документы
+    callGas('saveAllData',{
+        cases: '[]',
+        documents: JSON.stringify(allDocuments),
+        appointments: '[]',
+        blockedSlots: '[]',
+        newsArticles: '[]',
+        newsLinks: '[]',
+        workHours: '{}',
+        deviceId: deviceId
+    }, r=>console.log('documents saved',r));
+    
+    // Сохраняем записи
+    callGas('saveAllData',{
+        cases: '[]',
+        documents: '[]',
         appointments: JSON.stringify(allAppointments),
-        blockedSlots: blockedSlotsStr,
+        blockedSlots: '[]',
+        newsArticles: '[]',
+        newsLinks: '[]',
+        workHours: '{}',
+        deviceId: deviceId
+    }, r=>console.log('appointments saved',r));
+    
+    // Сохраняем заблокированные слоты
+    callGas('saveAllData',{
+        cases: '[]',
+        documents: '[]',
+        appointments: '[]',
+        blockedSlots: JSON.stringify(blockedSlots),
+        newsArticles: '[]',
+        newsLinks: '[]',
+        workHours: '{}',
+        deviceId: deviceId
+    }, r=>console.log('blockedSlots saved',r));
+    
+    // Сохраняем новости и ссылки
+    callGas('saveAllData',{
+        cases: '[]',
+        documents: '[]',
+        appointments: '[]',
+        blockedSlots: '[]',
         newsArticles: JSON.stringify(newsArticles),
-        newsLinks:    JSON.stringify(newsLinks),
-        workHours:    JSON.stringify(workHours),
-        deviceId:     localStorage.getItem('deviceId')||''
-    }, r=>console.log('saved',r));
+        newsLinks: JSON.stringify(newsLinks),
+        workHours: JSON.stringify(workHours),
+        deviceId: deviceId
+    }, r=>console.log('news saved',r));
 }
 
 function persistUser(){
@@ -587,10 +634,18 @@ function attachCaseEvents(){
     });
 
     document.getElementById('addCaseBtn')?.addEventListener('click',()=>{
-        if(!allUsers || allUsers.length === 0){
-            showToast('Список клиентов загружается, попробуйте еще раз', true);
-            return;
-        }
+    // Проверяем, загружены ли пользователи
+    if(!allUsers || allUsers.length === 0){
+        showToast('Список клиентов загружается, попробуйте еще раз', true);
+        // Пытаемся загрузить заново
+        syncDataFromServer().then(() => {
+            if(allUsers && allUsers.length > 0){
+                // Повторно открываем окно
+                document.getElementById('addCaseBtn').click();
+            }
+        });
+        return;
+    }
         
         let ov=document.createElement('div'); ov.className='modal-overlay';
         ov.innerHTML=`<div class="modal-container" style="width:92%;max-width:440px;text-align:left">
@@ -899,13 +954,16 @@ function renderCalendarUI(){
     renderPeriods(date);
 
     let addBtn = area.querySelector('#addBlockTimeBtn');
-    if(addBtn){
-        addBtn.onclick = function(e){
-            e.preventDefault();
-            e.stopPropagation();
-            let s = area.querySelector('#blockStartTime').value;
-            let en = area.querySelector('#blockEndTime').value;
-            if(!s||!en){ showToast('Выберите время',true); return; }
+if(addBtn){
+    addBtn.onclick = function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        let s = area.querySelector('#blockStartTime').value;
+        let en = area.querySelector('#blockEndTime').value;
+        if(!s||!en){ 
+            showToast('Выберите время',true); 
+            return;  // НЕ ОЧИЩАЕМ ПОЛЯ
+        }
             
             let startHour = parseInt(s.split(':')[0]);
             let endHour = parseInt(en.split(':')[0]);
@@ -1130,7 +1188,14 @@ function renderDashboard(){
         <button id="downloadPrivacyBtn"   class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
     </div></div>`;
     }else if(activeTab==='admin'&&isAdmin){
-    // Берём значение из переменной или из localStorage
+    // Принудительно получаем RSS URL из syncDataFromServer если его нет
+    if(!currentRssUrl && !localStorage.getItem('rssUrl')){
+        syncDataFromServer().then(() => {
+            if(activeTab === 'admin') renderDashboard();
+        });
+        return;
+    }
+    
     let rssDisplayValue = currentRssUrl || localStorage.getItem('rssUrl') || '';
     console.log('RSS URL для отображения:', rssDisplayValue);
     
@@ -1233,7 +1298,7 @@ function renderAdminLinks(){
     // Потом очищаем (только после успешного сохранения)
     document.getElementById('newLinkName').value='';
     document.getElementById('newLinkUrl').value='';
-    });
+});
 }
 
 function attachDynamicEvents(){
@@ -1260,39 +1325,66 @@ function attachDynamicEvents(){
             : '<p style="opacity:.5">Нет записей</p>';
 
         document.getElementById('bookSlotBtn')?.addEventListener('click',()=>{
-            if(!window.selectedSlot){ showToast('Выберите время',true); return; }
-            let {date,time}=window.selectedSlot;
-            if(allAppointments.some(a=>a.date===date&&a.time===time&&a.userId===currentUser.login)){ showToast('Вы уже записаны',true); return; }
-            if(blockedSlots.some(b=>b.date===date&&b.timeStart<=time&&b.timeEnd>=time)){ showToast('Слот занят',true); return; }
-            
-            let ov=document.createElement('div'); ov.className='modal-overlay';
-            ov.innerHTML=`<div class="modal-container"><h3>Запись на приём</h3>
-                <input id="apTopic" placeholder="Тема обращения">
-                <div class="modal-buttons">
-                    <button id="apConfirm" class="btn">Записаться</button>
-                    <button id="apCancel"  class="btn-outline">Отмена</button>
-                </div></div>`;
-            document.body.appendChild(ov);
-            ov.querySelector('#apConfirm').onclick=()=>{
-            // Форматируем дату из YYYY-MM-DD в DD.MM.YYYY
-            let formattedDate = date.split('-').reverse().join('.');
-            allAppointments.push({
-                id:Date.now(),
-                userId:currentUser.login,
-                date,
-                time,
-                clientName:currentUser.login,
-                topic:ov.querySelector('#apTopic').value,
-                phone:currentUser.phone || '',
-                status:'pending'
-            });
-            saveToServer(); ov.remove();
-            showModal({title:'Запись создана',message:`${formattedDate} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
-            renderDashboard();
+    if(!window.selectedSlot){ showToast('Выберите время',true); return; }
+    let {date,time}=window.selectedSlot;
+    
+    // Проверяем, не заблокирован ли слот
+    let isBlocked = blockedSlots.some(b => b.date === date && b.timeStart <= time && b.timeEnd >= time);
+    if(isBlocked){ showToast('Слот занят',true); return; }
+    
+    // Проверяем, не записан ли уже
+    let alreadyBooked = allAppointments.some(a => a.date === date && a.time === time && a.userId === currentUser.login);
+    if(alreadyBooked){ showToast('Вы уже записаны',true); return; }
+    
+    let ov=document.createElement('div'); ov.className='modal-overlay';
+    ov.innerHTML=`<div class="modal-container"><h3>Запись на приём</h3>
+        <input id="apTopic" placeholder="Тема обращения">
+        <div class="modal-buttons">
+            <button id="apConfirm" class="btn">Записаться</button>
+            <button id="apCancel"  class="btn-outline">Отмена</button>
+        </div></div>`;
+    document.body.appendChild(ov);
+    
+    ov.querySelector('#apConfirm').onclick=()=>{
+        let formattedDate = date.split('-').reverse().join('.');
+        let newAppointment = {
+            id: Date.now(),
+            userId: currentUser.login,
+            date: date,
+            time: time,
+            clientName: currentUser.login,
+            topic: ov.querySelector('#apTopic').value,
+            phone: currentUser.phone || '',
+            status: 'pending'
         };
-            ov.querySelector('#apCancel').onclick=()=>ov.remove();
-            ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+        allAppointments.push(newAppointment);
+        
+        // Сохраняем отдельно, чтобы избежать ошибки 400
+        callGas('saveAllData',{
+            cases: '[]',
+            documents: '[]',
+            appointments: JSON.stringify(allAppointments),
+            blockedSlots: '[]',
+            newsArticles: '[]',
+            newsLinks: '[]',
+            workHours: '{}',
+            deviceId: localStorage.getItem('deviceId')||''
+        }, res => {
+            console.log('Appointment saved', res);
+            if(res && res.success){
+                showModal({title:'Запись создана',message:`${formattedDate} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
+                renderDashboard();
+            } else {
+                showToast('Ошибка при сохранении записи', true);
+                // Откатываем
+                allAppointments = allAppointments.filter(a => a.id !== newAppointment.id);
+            }
         });
+        ov.remove();
+    };
+    ov.querySelector('#apCancel').onclick=()=>ov.remove();
+    ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+});
     }
 
     let ws=document.getElementById('workStart'), we=document.getElementById('workEnd');
@@ -1375,6 +1467,17 @@ function attachDynamicEvents(){
         return;
     }
     
+    // Сохраняем текущие значения на случай ошибки
+    let oldFullName = currentUser.fullName;
+    let oldPhone = currentUser.phone;
+    let oldEmail = currentUser.email;
+    
+    // Оптимистичное обновление
+    currentUser.fullName = newFullName;
+    currentUser.phone = newPhone;
+    currentUser.email = newEmail;
+    persistUser();
+    
     callGas('updateOwnProfile', {
         userId: currentUser.id,
         fullName: newFullName,
@@ -1384,16 +1487,18 @@ function attachDynamicEvents(){
     }, res => {
         if(res && res.success){
             showToast('Данные обновлены');
-            currentUser.fullName = newFullName;
-            currentUser.phone = newPhone;
-            currentUser.email = newEmail;
-            persistUser();
-            // Генерируем новые PDF с актуальными данными
+            // Генерируем новые PDF
             callGas('generateDocument', { docType: 'agreement', deviceId: localStorage.getItem('deviceId') });
             callGas('generateDocument', { docType: 'privacy', deviceId: localStorage.getItem('deviceId') });
             renderDashboard();
         } else {
+            // Откатываем изменения
+            currentUser.fullName = oldFullName;
+            currentUser.phone = oldPhone;
+            currentUser.email = oldEmail;
+            persistUser();
             showToast('Ошибка: ' + (res.error || '?'), true);
+            renderDashboard(); // Обновляем форму с старыми данными
         }
     });
 });
@@ -1465,8 +1570,20 @@ function renderClientsList(){
     let div = document.getElementById('clientsList');
     if(!div) return;
     
-    // Фильтруем: показываем только не admin
-    let activeClients = allUsers.filter(user => user.login !== 'admin');
+    // Проверяем, загружены ли данные
+    if(!allUsers || allUsers.length === 0){
+        div.innerHTML = '<p style="opacity:0.6">Загрузка клиентов...</p>';
+        // Пытаемся загрузить
+        syncDataFromServer().then(() => {
+            if(activeTab === 'admin') renderDashboard();
+        });
+        return;
+    }
+    
+    // Фильтруем: показываем только не admin и активных
+    let activeClients = allUsers.filter(user => 
+        user.login !== 'admin' && user.active !== false
+    );
     
     if(!activeClients || activeClients.length === 0){
         div.innerHTML = '<p style="opacity:0.6">Нет клиентов</p>';
