@@ -1366,15 +1366,13 @@ function attachDynamicEvents(){
         allAppointments.push(newAppointment);
         
         // Сохраняем отдельно, чтобы избежать ошибки 400
-        callGas('saveAllData',{
-            cases: '[]',
-            documents: '[]',
-            appointments: JSON.stringify(allAppointments),
-            blockedSlots: '[]',
-            newsArticles: '[]',
-            newsLinks: '[]',
-            workHours: '{}',
-            deviceId: localStorage.getItem('deviceId')||''
+        callGas('addAppointment', {
+            userId: currentUser.login,
+            date: date,
+            time: time,
+            topic: ov.querySelector('#apTopic').value,
+            phone: currentUser.phone || '',
+            deviceId: localStorage.getItem('deviceId')
         }, res => {
             console.log('Appointment saved', res);
             if(res && res.success){
