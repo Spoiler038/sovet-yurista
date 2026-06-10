@@ -428,8 +428,13 @@ function saveToServer(){
 
 function persistUser(){
     localStorage.setItem('currentUser',JSON.stringify(currentUser));
-    if(currentUser&&currentUser.deviceId) localStorage.setItem('deviceId',currentUser.deviceId);
-    else localStorage.removeItem('deviceId');
+    if(currentUser && currentUser.deviceId){
+        localStorage.setItem('deviceId', currentUser.deviceId);
+        console.log('deviceId сохранён:', currentUser.deviceId);
+    } else {
+        console.log('deviceId НЕ сохранён');
+        localStorage.removeItem('deviceId');
+    }
 }
 
 // ============================================================
@@ -1577,15 +1582,12 @@ function renderClientsList(){
     
     // Проверяем, загружены ли данные
     if(!allUsers || allUsers.length === 0){
-        div.innerHTML = '<p style="opacity:0.6">Загрузка клиентов...</p>';
-        // Пытаемся загрузить
-        syncDataFromServer().then(() => {
-            if(activeTab === 'admin') renderDashboard();
-        });
+        div.innerHTML = '<p style="opacity:0.6">Нет клиентов</p>';
+        // НЕ ВЫЗЫВАЕМ syncDataFromServer() здесь, чтобы избежать зацикливания
         return;
     }
     
-    // Фильтруем: показываем только не admin и активных
+    // Фильтруем: показываем только не admin
     let activeClients = allUsers.filter(user => user.login !== 'admin');
     
     if(!activeClients || activeClients.length === 0){
@@ -1593,7 +1595,6 @@ function renderClientsList(){
         return;
     }
     
-    // Используем activeClients, а не allUsers
     div.innerHTML = activeClients.map(user => `
         <div class="client-item" data-id="${user.id}" style="background:#2E2F35;border-radius:16px;padding:12px;margin-bottom:8px">
             <div class="flex-between">
