@@ -586,48 +586,106 @@ function attachCaseEvents(){
         if(selectedArchiveCase){ selectedArchiveCase.status='В процессе'; selectedArchiveCase.progress=0; selectedArchiveCase.result=null; saveToServer(); selectedArchiveCase=null; renderDashboard(); showToast('Дело возвращено в работу'); }
     });
 
-    document.getElementById('addCaseBtn')?.addEventListener('click',()=>{
+  document.getElementById('addCaseBtn')?.addEventListener('click',()=>{
+    // Проверяем, загружены ли пользователи
+    if(!allUsers || allUsers.length === 0){
+        showToast('Список клиентов загружается, попробуйте еще раз', true);
+        return;
+    }
     
     let ov=document.createElement('div'); ov.className='modal-overlay';
     ov.innerHTML=`<div class="modal-container" style="width:92%;max-width:440px;text-align:left">
         <h3 style="text-align:center;margin-bottom:18px">Новое дело</h3>
-        <input id="ncTitle" placeholder="Название дела">
-        <label style="font-size:12px;opacity:.65;margin:-8px 0 4px 8px;display:block">Заявитель</label>
-        <div id="ncClaimantWrap"></div>
-        <label style="font-size:12px;opacity:.65;margin:-4px 0 4px 8px;display:block">Ответчик</label>
-        <div id="ncDefendantWrap"></div>
-        <select id="ncCat" style="margin-top:4px"><option>Арбитраж</option><option>Гражданское</option><option>Административное</option></select>
-        <div class="modal-buttons">
-            <button id="ncCreate" class="btn">Создать</button>
-            <button id="ncCancel" class="btn-outline">Отмена</button>
-        </div></div>`;
+        <input id="newCaseTitle" placeholder="Название дела">
+        
+        <label style="font-size:12px;opacity:.65;margin:8px 0 4px 8px;display:block">Заявитель</label>
+        <div id="claimantComboContainer"></div>
+        
+        <label style="font-size:12px;opacity:.65;margin:8px 0 4px 8px;display:block">Ответчик</label>
+        <div id="defendantComboContainer"></div>
+        
+        <select id="newCaseCategory" style="margin-top:8px">
+            <option>Арбитраж</option>
+            <option>Гражданское</option>
+            <option>Административное</option>
+        </select>
+        
+        <div class="modal-buttons" style="margin-top:20px">
+            <button id="confirmCreateCaseBtn" class="btn">Создать</button>
+            <button id="cancelCreateCaseBtn" class="btn-outline">Отмена</button>
+        </div>
+    </div>`;
     document.body.appendChild(ov);
     
-    // Создаём combo поля с актуальным списком пользователей
-    let claimantWrap = ov.querySelector('#ncClaimantWrap');
-    let defendantWrap = ov.querySelector('#ncDefendantWrap');
-    claimantWrap.appendChild(createComboField('ncClaimant','Введите или выберите',allUsers));
-    defendantWrap.appendChild(createComboField('ncDefendant','Введите или выберите',allUsers));
-        ov.querySelector('#ncCreate').onclick=()=>{
-            let title=ov.querySelector('#ncTitle').value.trim();
-            if(!title){ showToast('Введите название',true); return; }
-            let claimant=document.getElementById('ncClaimant')?.value.trim()||'';
-            let defendant=document.getElementById('ncDefendant')?.value.trim()||'';
-            let cat=ov.querySelector('#ncCat').value;
-            let baseId=Date.now();
-            let userLogins=allUsers.map(u=>u.login);
-            allCases.push({id:baseId,userId:'admin',title,status:'В процессе',stage:'Новое',progress:0,result:null,history:[],claimant,defendant,category:cat});
-            [claimant,defendant].filter(Boolean).forEach((login,i)=>{
-                if(userLogins.includes(login)){
-                    allCases.push({id:baseId+(i+1),userId:login,title,status:'В процессе',stage:'Новое',progress:0,result:null,history:[],claimant,defendant,category:cat,parentId:baseId});
-                }
-            });
-            saveToServer(); ov.remove(); renderDashboard(); showToast('Дело добавлено');
-        };
-        ov.querySelector('#ncCancel').onclick=()=>ov.remove();
-        ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
-    });
-}
+    // Создаём combo поля
+    let claimantContainer = ov.querySelector('#claimantComboContainer');
+    let defendantContainer = ov.querySelector('#defendantComboContainer');
+    
+    // Передаём allUsers в combo поле
+    let claimantCombo = createComboField('newClaimantInput', 'Введите или выберите заявителя', allUsers);
+    let defendantCombo = createComboField('newDefendantInput', 'Введите или выберите ответчика', allUsers);
+    
+    claimantContainer.appendChild(claimantCombo);
+    defendantContainer.appendChild(defendantCombo);
+    
+    // Кнопка создания дела
+    ov.querySelector('#confirmCreateCaseBtn').onclick=()=>{
+        let title = ov.querySelector('#newCaseTitle').value.trim();
+        if(!title){ 
+            showToast('Введите название дела', true); 
+            return; 
+        }
+        
+        let claimant = document.getElementById('newClaimantInput')?.value.trim() || '';
+        let defendant = document.getElementById('newDefendantInput')?.value.trim() || '';
+        let category = ov.querySelector('#newCaseCategory').value;
+        let baseId = Date.now();
+        let userLogins = allUsers.map(u => u.login);
+        
+        // Главное дело для админа
+        allCases.push({
+            id: baseId, 
+            userId: 'admin', 
+            title, 
+            status: 'В процессе', 
+            stage: 'Новое', 
+            progress: 0, 
+            result: null, 
+            history: [], 
+            claimant, 
+            defendant, 
+            category
+        });
+        
+        // Копии для клиентов-участников
+        [claimant, defendant].filter(Boolean).forEach((login, i)=>{
+            if(userLogins.includes(login)){
+                allCases.push({
+                    id: baseId + (i + 1), 
+                    userId: login, 
+                    title, 
+                    status: 'В процессе', 
+                    stage: 'Новое', 
+                    progress: 0, 
+                    result: null, 
+                    history: [], 
+                    claimant, 
+                    defendant, 
+                    category, 
+                    parentId: baseId
+                });
+            }
+        });
+        
+        saveToServer(); 
+        ov.remove(); 
+        renderDashboard(); 
+        showToast('Дело добавлено');
+    };
+    
+    ov.querySelector('#cancelCreateCaseBtn').onclick=()=>ov.remove();
+    ov.onclick=e=>{ if(e.target === ov) ov.remove(); };
+});
 
 function attachDocAdminEvents(){
     document.querySelectorAll('.attach-doc-btn').forEach(btn=>{
@@ -776,114 +834,107 @@ function renderCalendarUI(){
     }
 
     function showPlanPanel(date){
-        let area=document.getElementById('timeSlotsArea');
-        area.innerHTML=`<div>
-            <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
-            <div class="block-time-row">
-                <input type="time" id="bStart" class="time-input-safe" placeholder="Начало">
-                <span style="opacity:.5">—</span>
-                <input type="time" id="bEnd" class="time-input-safe" placeholder="Конец">
-                <button id="bAddBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
-            </div>
-            <div id="bList"></div>
-        </div>`;
+    let area=document.getElementById('timeSlotsArea');
+    area.innerHTML=`<div>
+        <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
+        <div class="block-time-row">
+            <input type="time" id="blockStartTime" class="time-input-safe" placeholder="Начало">  <!-- УНИКАЛЬНЫЙ ID -->
+            <span style="opacity:.5">—</span>
+            <input type="time" id="blockEndTime" class="time-input-safe" placeholder="Конец">      <!-- УНИКАЛЬНЫЙ ID -->
+            <button id="addBlockTimeBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
+        </div>
+        <div id="blockedPeriodsList"></div>
+    </div>`;
 
-        let bStart = area.querySelector('#bStart');
-        let bEnd = area.querySelector('#bEnd');
-        
-        // Только один обработчик для предотвращения всплытия
-        if(bStart){
-            bStart.addEventListener('click', function(e) { e.stopPropagation(); });
-        }
-        if(bEnd){
-            bEnd.addEventListener('click', function(e) { e.stopPropagation(); });
-        }
-
-        function renderPeriods(date){
-            let list=document.getElementById('bList'); if(!list) return;
-            let periods=blockedSlots.filter(b=>b.date===date);
-            if(!periods.length){ list.innerHTML='<p style="opacity:.5;margin-top:8px">Нет периодов</p>'; return; }
-            list.innerHTML=periods.map((p,i)=>`
-                <div class="period-row">
-                    <span style="font-weight:600">${p.timeStart} — ${p.timeEnd}</span>
-                    <div class="period-row-btns">
-                        <button class="btn btn-outline btn-small ep-edit" data-i="${i}" style="padding:5px 10px"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="btn btn-danger  btn-small ep-del" data-i="${i}" style="padding:5px 10px"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                </div>`).join('');
-
-            list.querySelectorAll('.ep-del').forEach(btn=>{
-                btn.addEventListener('click',e=>{ e.stopPropagation();
-                    let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx];
-                    if(!p) return;
-                    blockedSlots=blockedSlots.filter(b=>b!==p); saveToServer(); renderPeriods(date); showToast('Удалено');
-                });
-            });
-
-            list.querySelectorAll('.ep-edit').forEach(btn=>{
-                btn.addEventListener('click',e=>{ e.stopPropagation();
-                    let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx]; if(!p) return;
-                    let ov=document.createElement('div'); ov.className='modal-overlay';
-                    ov.innerHTML=`<div class="modal-container">
-                        <div class="modal-icon"><i class="fas fa-clock"></i></div>
-                        <h3>Редактировать период</h3>
-                        <p style="opacity:.6;margin-bottom:16px">${date}</p>
-                        <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
-                            <div style="flex:1"><div style="font-size:11px;opacity:.6;margin-bottom:6px">Начало</div>
-                                <input type="time" id="eStart" value="${p.timeStart}" style="text-align:center"></div>
-                            <span style="opacity:.4;margin-top:20px">—</span>
-                            <div style="flex:1"><div style="font-size:11px;opacity:.6;margin-bottom:6px">Конец</div>
-                                <input type="time" id="eEnd" value="${p.timeEnd}" style="text-align:center"></div>
-                        </div>
-                        <div class="modal-buttons">
-                            <button id="eSave" class="btn">Сохранить</button>
-                            <button id="eCancel" class="btn-outline">Отмена</button>
-                        </div></div>`;
-                    document.body.appendChild(ov);
-                    ov.querySelector('#eSave').onclick=()=>{
-                        let ns=ov.querySelector('#eStart').value, ne=ov.querySelector('#eEnd').value;
-                        if(!ns||!ne){ showToast('Заполните время',true); return; }
-                        p.timeStart=ns; p.timeEnd=ne; saveToServer(); renderPeriods(date); showToast('Обновлено'); ov.remove();
-                    };
-                    ov.querySelector('#eCancel').onclick=()=>ov.remove();
-                    ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
-                });
-            });
-        }
-
-        renderPeriods(date);
-
-        let addBtn = area.querySelector('#bAddBtn');
-        if(addBtn){
-            addBtn.onclick = function(e){
-                e.preventDefault();
-                e.stopPropagation();
-                let s = area.querySelector('#bStart').value;
-                let en = area.querySelector('#bEnd').value;
-                if(!s||!en){ showToast('Выберите время',true); return; }
-                
-                let startHour = parseInt(s.split(':')[0]);
-                let endHour = parseInt(en.split(':')[0]);
-                
-                if(endHour === startHour + 1 && en.split(':')[1] === '00'){
-                    blockedSlots.push({
-                        id:Date.now(),
-                        date,
-                        timeStart: s,
-                        timeEnd: s.substring(0,2) + ':59'
-                    });
-                } else {
-                    blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
-                }
-                
-                saveToServer(); 
-                renderPeriods(date);
-                area.querySelector('#bStart').value='';
-                area.querySelector('#bEnd').value='';
-                showToast('Период заблокирован');
-            };
-        }
+    let bStart = area.querySelector('#blockStartTime');
+    let bEnd = area.querySelector('#blockEndTime');
+    
+    // Простые обработчики без stopPropagation
+    if(bStart){
+        bStart.onclick = function(e) { e.stopPropagation(); };
     }
+    if(bEnd){
+        bEnd.onclick = function(e) { e.stopPropagation(); };
+    }
+
+    function renderPeriods(date){
+        let list=document.getElementById('blockedPeriodsList'); 
+        if(!list) return;
+        let periods=blockedSlots.filter(b=>b.date===date);
+        if(!periods.length){ list.innerHTML='<p style="opacity:.5;margin-top:8px">Нет периодов</p>'; return; }
+        list.innerHTML=periods.map((p,i)=>`
+            <div class="period-row">
+                <span style="font-weight:600">${p.timeStart} — ${p.timeEnd}</span>
+                <div class="period-row-btns">
+                    <button class="btn btn-outline btn-small edit-period" data-i="${i}" style="padding:5px 10px"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="btn btn-danger btn-small del-period" data-i="${i}" style="padding:5px 10px"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+        `).join('');
+
+        list.querySelectorAll('.del-period').forEach(btn=>{
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx];
+                if(!p) return;
+                blockedSlots=blockedSlots.filter(b=>b!==p); 
+                saveToServer(); 
+                renderPeriods(date); 
+                showToast('Удалено');
+            };
+        });
+
+        list.querySelectorAll('.edit-period').forEach(btn=>{
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx]; 
+                if(!p) return;
+                let newStart = prompt("Новое время начала", p.timeStart);
+                let newEnd = prompt("Новое время окончания", p.timeEnd);
+                if(newStart && newEnd){
+                    p.timeStart = newStart;
+                    p.timeEnd = newEnd;
+                    saveToServer();
+                    renderPeriods(date);
+                    showToast('Обновлено');
+                }
+            };
+        });
+    }
+
+    renderPeriods(date);
+
+    let addBtn = area.querySelector('#addBlockTimeBtn');
+    if(addBtn){
+        addBtn.onclick = function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            let s = area.querySelector('#blockStartTime').value;
+            let en = area.querySelector('#blockEndTime').value;
+            if(!s||!en){ showToast('Выберите время',true); return; }
+            
+            let startHour = parseInt(s.split(':')[0]);
+            let endHour = parseInt(en.split(':')[0]);
+            
+            if(endHour === startHour + 1 && en.split(':')[1] === '00'){
+                blockedSlots.push({
+                    id:Date.now(),
+                    date,
+                    timeStart: s,
+                    timeEnd: s.substring(0,2) + ':59'
+                });
+            } else {
+                blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
+            }
+            
+            saveToServer(); 
+            renderPeriods(date);
+            area.querySelector('#blockStartTime').value='';
+            area.querySelector('#blockEndTime').value='';
+            showToast('Период заблокирован');
+        };
+    }
+}
 
     function loadDate(date){
         if(currentUser.role==='admin'){
