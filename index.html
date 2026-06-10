@@ -959,16 +959,6 @@ function renderDashboard(){
 
     let container=document.getElementById('mainContent');
     let isAdmin=(currentUser.role==='admin');
-    
-    if(activeTab === 'admin' && isAdmin && currentRssUrl === ''){
-    // Повторно загружаем RSS URL из syncDataFromServer
-    callGas('getAllData', { deviceId: localStorage.getItem('deviceId')||'' }, data => {
-        if(data && data.success && data.rss_feed_url){
-            currentRssUrl = data.rss_feed_url;
-            renderDashboard(); // обновляем отображение
-        }
-    });
-    }
     let html='';    
     if(activeTab==='cases'){
         if(isAdmin){
