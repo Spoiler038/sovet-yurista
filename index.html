@@ -1087,16 +1087,6 @@ function renderDashboard(){
         <button id="downloadAgreementBtn" class="btn-outline btn-small">Пользовательское соглашение (PDF)</button>
         <button id="downloadPrivacyBtn"   class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
     </div></div>`;
-        <div class="card"><h3>Смена пароля</h3>
-            <input type="password" id="oldPassword"    placeholder="Старый пароль">
-            <input type="password" id="newPassword"    placeholder="Новый пароль">
-            <input type="password" id="newPassConfirm" placeholder="Подтвердите новый пароль">
-            <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
-        </div>
-        <div class="card"><h3>Документы</h3><div class="docs-buttons">
-            <button id="downloadAgreementBtn" class="btn-outline btn-small">Пользовательское соглашение (PDF)</button>
-            <button id="downloadPrivacyBtn"   class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
-        </div></div>`;
     } else if(activeTab==='admin'&&isAdmin){
         // Принудительно получаем свежее значение
         let rssDisplayValue = currentRssUrl || '';
@@ -1126,22 +1116,22 @@ function renderDashboard(){
         <div style="margin-top:10px">
             <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
         </div>
-        <div style="margin-top:8px; font-size:11px; opacity:0.6;">
+         <div style="margin-top:8px; font-size:11px; opacity:0.6;">
             📌 Текущий RSS URL: ${esc(rssDisplayValue) || 'не задан'}
-    </div>
-</div>`;
-        <div class="card"><h3>Ссылки</h3>
-            <div id="linksList"></div>
-            <div class="flex-col" style="margin-top:12px">
-                <input id="newLinkName" placeholder="Название">
-                <input id="newLinkUrl"  placeholder="URL">
-                <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
-            </div>
-        </div>`;
-        <div class="card"><h3>Управление клиентами</h3>
-            <div id="clientsList" style="max-height:300px;overflow-y:auto"></div>
         </div>
-    }
+    </div>
+    <div class="card"><h3>Ссылки</h3>
+        <div id="linksList"></div>
+        <div class="flex-col" style="margin-top:12px">
+            <input id="newLinkName" placeholder="Название">
+            <input id="newLinkUrl"  placeholder="URL">
+            <button id="addLinkBtn" class="btn-outline btn-small">Добавить</button>
+        </div>
+    </div>
+    <div class="card"><h3>Управление клиентами</h3>
+        <div id="clientsList" style="max-height:300px;overflow-y:auto"></div>
+    </div>`;
+}
 
     container.innerHTML=html;
 
@@ -1150,7 +1140,10 @@ function renderDashboard(){
         renderUserDocs();
         if(isAdmin&&casesSubTab==='new') attachDocAdminEvents();
     }
-    if(activeTab==='admin'&&isAdmin) renderAdminLinks();
+    if(activeTab==='admin'&&isAdmin) {
+    renderAdminLinks();
+    renderClientsList();
+}
     attachDynamicEvents();
     if(isAdmin&&activeTab==='cases') attachCaseEvents();
 
@@ -1523,12 +1516,6 @@ function renderClientsList(){
             });
         };
     });
-}
-
-// Добавьте вызов в renderDashboard() после renderAdminLinks():
-if(activeTab==='admin'&&isAdmin) {
-    renderAdminLinks();
-    renderClientsList(); // Добавьте эту строку
 }
     
 async function init(){
