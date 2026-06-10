@@ -352,9 +352,10 @@ function syncDataFromServer(){
                 if(currentRssUrl) localStorage.setItem('rssUrl', currentRssUrl);
                 resolve();
             } else if(data&&data.error==='Unauthorized'){
-                localStorage.removeItem('deviceId');
-                currentRssUrl = '';
-                showLoginScreen(); showToast('Выполните вход или зарегистрируйтесь'); resolve();
+                // НЕ ОЧИЩАЕМ deviceId и НЕ ПОКАЗЫВАЕМ ЭКРАН ВХОДА, если пользователь уже есть
+                // Просто разрешаем, данные будут пустыми
+                console.log('getAllData вернул Unauthorized, возможно пользователь не авторизован');
+                resolve();
             } else { resolve(); }
         });
     });
@@ -485,14 +486,18 @@ async function handleLogin(){
     let login=document.getElementById('loginUsername').value.trim();
     let pass =document.getElementById('loginPassword').value.trim();
     if(!document.getElementById('consentCheckbox').checked){
-        showModal({title:'Требуется согласие',message:'Примите условия обработки ПД.',confirmText:'Понятно'}); return;
+        showModal({title:'Требуется согласие',message:'Примите условия обработки ПД.',confirmText:'Понятно'}); 
+        return;
     }
     callGas('login',{login,password:pass,deviceId:localStorage.getItem('deviceId')||''},data=>{
         if(data&&data.success){
-            currentUser=data.user; persistUser();
-            clearLoginForm();
-            showAppScreen(); showToast('Добро пожаловать!');
+            currentUser=data.user; 
+            persistUser();
+            clearLoginForm();  // Очищаем только при успешном входе
+            showAppScreen(); 
+            showToast('Добро пожаловать!');
         } else {
+            // НЕ ОЧИЩАЕМ ПОЛЯ ПРИ ОШИБКЕ, просто показываем сообщение
             showModal({title:'Ошибка входа',message:'Неверный логин или пароль.',icon:'fas fa-lock',confirmText:'OK'});
         }
     });
