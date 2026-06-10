@@ -1087,7 +1087,7 @@ function renderDashboard(){
         <button id="downloadAgreementBtn" class="btn-outline btn-small">Пользовательское соглашение (PDF)</button>
         <button id="downloadPrivacyBtn"   class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
     </div></div>`;
-     else if(activeTab==='admin'&&isAdmin){
+    }else if(activeTab==='admin'&&isAdmin){
         // Принудительно получаем свежее значение
         let rssDisplayValue = currentRssUrl || '';
         console.log('RSS URL для отображения:', rssDisplayValue);
