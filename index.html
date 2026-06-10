@@ -585,11 +585,6 @@ function attachCaseEvents(){
     });
 
     document.getElementById('addCaseBtn')?.addEventListener('click',()=>{
-    // Принудительно обновляем список пользователей перед созданием модального окна
-    if(allUsers.length === 0){
-        showToast('Список пользователей загружается, попробуйте еще раз', true);
-        return;
-    }
     
     let ov=document.createElement('div'); ov.className='modal-overlay';
     ov.innerHTML=`<div class="modal-container" style="width:92%;max-width:440px;text-align:left">
@@ -661,11 +656,9 @@ function renderCalendarUI(){
     let todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     
     for(let d=1;d<=dim;d++){
-    let ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    let isToday = (ds === todayStr);
-    // Убираем ${isToday?' selected':''} - не выделяем сегодняшний день автоматически
-    html+=`<div class="cal-day${apptDates.has(ds)?' has-appt':''}" data-date="${ds}">${d}</div>`;
-}
+        let ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        html+=`<div class="cal-day${apptDates.has(ds)?' has-appt':''}" data-date="${ds}">${d}</div>`;
+    }
     html+='</div>';
     document.getElementById('simpleCalendar').innerHTML=html;
 
@@ -743,53 +736,51 @@ function renderCalendarUI(){
     }
 
     function showClientSlots(date){
-    // Сохраняем текущую выбранную дату в глобальную переменную
-    window.currentSelectedDate = date;
-    
-    let s=parseInt((workHours.start||'09:00').split(':')[0]);
-    let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
-    let slots=[];
-    
-    for(let h=s; h<e; h++){
-        let timeStart = String(h).padStart(2,'0') + ':00';
-        let isBlocked = blockedSlots.some(b => {
-            if(b.date !== date) return false;
-            return (timeStart >= b.timeStart && timeStart < b.timeEnd);
-        });
-        if(!isBlocked){
-            slots.push(timeStart);
+        window.currentSelectedDate = date;
+        
+        let s=parseInt((workHours.start||'09:00').split(':')[0]);
+        let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
+        let slots=[];
+        
+        for(let h=s; h<e; h++){
+            let timeStart = String(h).padStart(2,'0') + ':00';
+            let isBlocked = blockedSlots.some(b => {
+                if(b.date !== date) return false;
+                return (timeStart >= b.timeStart && timeStart < b.timeEnd);
+            });
+            if(!isBlocked){
+                slots.push(timeStart);
+            }
         }
-    }
-    
-    let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
-    slots.forEach(t=>{
-        let bk=allAppointments.some(a=>a.date===date && a.time===t);
-        slotsHtml+=`<div class="slot ${bk?'booked':'free'}" data-time="${t}">${t} - ${(parseInt(t)+1)}:00 ${bk?'❌':'✅'}</div>`;
-    });
-    slotsHtml+='</div></div>';
-    document.getElementById('timeSlotsArea').innerHTML=slotsHtml;
-    
-    document.querySelectorAll('.slot.free').forEach(slot=>{
-        slot.addEventListener('click',function(e){
-            e.stopPropagation();
-            document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
-            // Используем сохранённую дату, а не новую
-            window.selectedSlot={date: window.currentSelectedDate, time:this.dataset.time};
-            this.style.border='2px solid #FAC643'; 
-            this.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
-            showToast('Выбрано: '+this.dataset.time);
+        
+        let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
+        slots.forEach(t=>{
+            let bk=allAppointments.some(a=>a.date===date && a.time===t);
+            slotsHtml+=`<div class="slot ${bk?'booked':'free'}" data-time="${t}">${t} - ${(parseInt(t)+1)}:00 ${bk?'❌':'✅'}</div>`;
         });
-    });
-}
+        slotsHtml+='</div></div>';
+        document.getElementById('timeSlotsArea').innerHTML=slotsHtml;
+        
+        document.querySelectorAll('.slot.free').forEach(slot=>{
+            slot.addEventListener('click',function(e){
+                e.stopPropagation();
+                document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
+                window.selectedSlot={date: window.currentSelectedDate, time:this.dataset.time};
+                this.style.border='2px solid #FAC643'; 
+                this.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
+                showToast('Выбрано: '+this.dataset.time);
+            });
+        });
+    }
 
     function showPlanPanel(date){
         let area=document.getElementById('timeSlotsArea');
         area.innerHTML=`<div>
             <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
             <div class="block-time-row">
-                <input type="time" id="bStart" class="time-input-safe" placeholder="Начало" style="touch-action: manipulation;">
+                <input type="time" id="bStart" class="time-input-safe" placeholder="Начало">
                 <span style="opacity:.5">—</span>
-                <input type="time" id="bEnd" class="time-input-safe" placeholder="Конец" style="touch-action: manipulation;">
+                <input type="time" id="bEnd" class="time-input-safe" placeholder="Конец">
                 <button id="bAddBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
             </div>
             <div id="bList"></div>
@@ -798,15 +789,11 @@ function renderCalendarUI(){
         let bStart = area.querySelector('#bStart');
         let bEnd = area.querySelector('#bEnd');
         
+        // Только один обработчик для предотвращения всплытия
         if(bStart){
-            bStart.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-            bStart.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
             bStart.addEventListener('click', function(e) { e.stopPropagation(); });
         }
-        
         if(bEnd){
-            bEnd.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-            bEnd.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
             bEnd.addEventListener('click', function(e) { e.stopPropagation(); });
         }
 
@@ -824,7 +811,7 @@ function renderCalendarUI(){
                 </div>`).join('');
 
             list.querySelectorAll('.ep-del').forEach(btn=>{
-                btn.addEventListener('pointerup',e=>{ e.stopPropagation();
+                btn.addEventListener('click',e=>{ e.stopPropagation();
                     let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx];
                     if(!p) return;
                     blockedSlots=blockedSlots.filter(b=>b!==p); saveToServer(); renderPeriods(date); showToast('Удалено');
@@ -832,7 +819,7 @@ function renderCalendarUI(){
             });
 
             list.querySelectorAll('.ep-edit').forEach(btn=>{
-                btn.addEventListener('pointerup',e=>{ e.stopPropagation();
+                btn.addEventListener('click',e=>{ e.stopPropagation();
                     let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx]; if(!p) return;
                     let ov=document.createElement('div'); ov.className='modal-overlay';
                     ov.innerHTML=`<div class="modal-container">
@@ -865,37 +852,35 @@ function renderCalendarUI(){
         renderPeriods(date);
 
         let addBtn = area.querySelector('#bAddBtn');
-if(addBtn){
-    addBtn.onclick = function(e){
-        e.preventDefault();
-        e.stopPropagation();
-        let s = area.querySelector('#bStart').value;
-        let en = area.querySelector('#bEnd').value;
-        if(!s||!en){ showToast('Выберите время',true); return; }
-        
-        // НЕ ОЧИЩАЕМ ПОЛЯ ПРИ ОШИБКЕ
-        let startHour = parseInt(s.split(':')[0]);
-        let endHour = parseInt(en.split(':')[0]);
-        
-        if(endHour === startHour + 1 && en.split(':')[1] === '00'){
-            blockedSlots.push({
-                id:Date.now(),
-                date,
-                timeStart: s,
-                timeEnd: s.substring(0,2) + ':59'
-            });
-        } else {
-            blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
+        if(addBtn){
+            addBtn.onclick = function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                let s = area.querySelector('#bStart').value;
+                let en = area.querySelector('#bEnd').value;
+                if(!s||!en){ showToast('Выберите время',true); return; }
+                
+                let startHour = parseInt(s.split(':')[0]);
+                let endHour = parseInt(en.split(':')[0]);
+                
+                if(endHour === startHour + 1 && en.split(':')[1] === '00'){
+                    blockedSlots.push({
+                        id:Date.now(),
+                        date,
+                        timeStart: s,
+                        timeEnd: s.substring(0,2) + ':59'
+                    });
+                } else {
+                    blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
+                }
+                
+                saveToServer(); 
+                renderPeriods(date);
+                area.querySelector('#bStart').value='';
+                area.querySelector('#bEnd').value='';
+                showToast('Период заблокирован');
+            };
         }
-        
-        saveToServer(); 
-        renderPeriods(date);
-        // ОЧИЩАЕМ ПОЛЯ ТОЛЬКО ПОСЛЕ УСПЕШНОГО ДОБАВЛЕНИЯ
-        area.querySelector('#bStart').value='';
-        area.querySelector('#bEnd').value='';
-        showToast('Период заблокирован');
-    };
-}
     }
 
     function loadDate(date){
@@ -906,20 +891,24 @@ if(addBtn){
         }
     }
 
+    // Обработчики кликов по дням - с проверкой, что клик именно по дню
     document.querySelectorAll('.cal-day').forEach(el=>{
-    el.removeEventListener('click', el._clickHandler);
-    el._clickHandler = function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-        // Снимаем выделение со всех дней
-        document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
-        this.classList.add('selected');
-        let selectedDate = this.dataset.date;
-        window.currentSelectedDate = selectedDate;
-        loadDate(selectedDate);
-    };
-    el.addEventListener('click', el._clickHandler);
-});
+        el.removeEventListener('click', el._clickHandler);
+        el._clickHandler = function(e) {
+            // Проверяем, что клик именно по элементу дня, а не по внутренним элементам
+            if(e.target !== this) return;
+            
+            e.stopPropagation();
+            document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+            this.classList.add('selected');
+            let selectedDate = this.dataset.date;
+            window.currentSelectedDate = selectedDate;
+            // Сохраняем выбранную дату в localStorage
+            localStorage.setItem('selectedDate', selectedDate);
+            loadDate(selectedDate);
+        };
+        el.addEventListener('click', el._clickHandler);
+    });
 
     let planBtn=document.getElementById('planningToggleBtn');
     if(planBtn){
@@ -936,16 +925,23 @@ if(addBtn){
             :'<i class="fas fa-calendar-plus"></i> Планирование';
     }
 
-   let todayDay = document.querySelector(`.cal-day[data-date="${todayStr}"]`);
-    if(todayDay){
-        todayDay.classList.add('selected');
-        loadDate(todayStr);
-    } else {
-        let firstDay = document.querySelector('.cal-day');
-        if(firstDay){ 
-            firstDay.classList.add('selected'); 
-            loadDate(firstDay.dataset.date); 
-        }
+    // Выбираем сохранённую дату или сегодняшний день
+    let savedDate = localStorage.getItem('selectedDate');
+    let targetDay = null;
+    
+    if(savedDate){
+        targetDay = document.querySelector(`.cal-day[data-date="${savedDate}"]`);
+    }
+    if(!targetDay){
+        targetDay = document.querySelector(`.cal-day[data-date="${todayStr}"]`);
+    }
+    if(!targetDay){
+        targetDay = document.querySelector('.cal-day');
+    }
+    
+    if(targetDay){
+        targetDay.classList.add('selected');
+        loadDate(targetDay.dataset.date);
     }
 }
 
@@ -953,6 +949,15 @@ if(addBtn){
 //  РЕНДЕР ДАШБОРДА
 // ============================================================
 function renderDashboard(){
+    if(activeTab === 'admin' && isAdmin && currentRssUrl === ''){
+    // Повторно загружаем RSS URL из syncDataFromServer
+    callGas('getAllData', { deviceId: localStorage.getItem('deviceId')||'' }, data => {
+        if(data && data.success && data.rss_feed_url){
+            currentRssUrl = data.rss_feed_url;
+            renderDashboard(); // обновляем отображение
+        }
+    });
+}
     if(!currentUser) return;
     if(typeof currentRssUrl === 'undefined' || currentRssUrl === null) currentRssUrl = '';
     document.getElementById('userAvatar').textContent=currentUser.login.charAt(0).toUpperCase();
@@ -1423,11 +1428,17 @@ function renderClientsList(){
     let div = document.getElementById('clientsList');
     if(!div) return;
     
-    if(!allUsers || allUsers.length === 0){
+    // Фильтруем: показываем только active === true и не admin
+    let activeClients = allUsers.filter(user => 
+        user.login !== 'admin'  // исключаем администратора
+    );
+    
+    if(!activeClients || activeClients.length === 0){
         div.innerHTML = '<p style="opacity:0.6">Нет клиентов</p>';
         return;
     }
     
+          
     div.innerHTML = allUsers.map(user => `
         <div class="client-item" data-id="${user.id}" style="background:#2E2F35;border-radius:16px;padding:12px;margin-bottom:8px">
             <div class="flex-between">
@@ -1444,7 +1455,7 @@ function renderClientsList(){
                 <button class="btn btn-small save-client-btn" data-id="${user.id}">Сохранить</button>
                 <button class="btn-danger btn-small delete-client-btn" data-id="${user.id}">Удалить</button>
             </div>
-        </div>
+         </div>
     `).join('');
     
     // Обработчики кнопок редактирования
