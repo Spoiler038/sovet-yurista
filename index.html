@@ -77,10 +77,16 @@
         .consent-link{color:#FAC643;cursor:pointer;border-bottom:1px dashed #FAC643}
 
         /* ── Calendar ── */
-        .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:16px 0}
+        .cal-month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+        .cal-month-label{font-weight:700;font-size:15px;color:#FAC643;text-align:center;flex:1}
+        .cal-nav-btn{background:rgba(250,198,67,.15);border:1px solid rgba(250,198,67,.3);color:#FAC643;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;padding:0;flex-shrink:0}
+        .cal-nav-btn:hover{background:rgba(250,198,67,.35)}
+        .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:8px 0}
         .cal-day{text-align:center;padding:9px 0;background:#2E2F35;border-radius:40px;font-size:13px;cursor:pointer;transition:.1s}
         .cal-day.selected{background:#FAC643;color:#111;font-weight:bold}
         .cal-day.has-appt{border:2px solid rgba(250,198,67,.5)}
+        .cal-day.today{box-shadow:0 0 0 2px #FAC643}
+        .cal-day.other-month{opacity:.35}
         .time-slots{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
         .slot{background:#2E2F35;border-radius:40px;padding:10px 18px;margin:4px;display:inline-block;cursor:pointer;font-weight:500;font-size:13px}
         .slot.free{background:#3A3B44}
@@ -158,7 +164,8 @@
 
         /* ── Block periods ── */
         .block-time-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-        .block-time-row input[type="time"]{flex:1;min-width:0;margin-bottom:0}
+        /* ИСПРАВЛЕНО: поля времени блокировки не участвуют в swipe */
+        .block-time-row input[type="time"]{flex:1;min-width:0;margin-bottom:0;touch-action:manipulation;-webkit-user-select:text;user-select:text}
         .period-row{display:flex;justify-content:space-between;align-items:center;background:#1e1f24;border-radius:14px;padding:10px 14px;margin-bottom:8px}
         .period-row-btns{display:flex;gap:6px}
 
@@ -170,6 +177,11 @@
 
         .btn,.btn-outline,.btn-danger,.btn-success,.nav-item,.slot,.cal-day,.tab{transition:transform 0.1s ease,background 0.2s ease;cursor:pointer}
         .btn:active,.btn-outline:active,.btn-danger:active,.btn-success:active,.nav-item:active,.slot:active,.cal-day:active,.tab:active{transform:scale(0.97)}
+
+        /* ── My appointments (client) ── */
+        .my-appt-card{background:#25262B;border-radius:16px;padding:12px 16px;margin-bottom:8px;border-left:3px solid #FAC643}
+        .my-appt-card.confirmed{border-left-color:#50dc78}
+        .my-appt-status{font-size:12px;margin-top:4px;opacity:.75}
     </style>
 </head>
 <body>
@@ -259,6 +271,10 @@ let activeTab        = 'cases';
 let casesSubTab      = 'current';
 let allUsers         = [];
 
+// ── Состояние календаря (текущий отображаемый месяц) ──
+let calViewYear  = new Date().getFullYear();
+let calViewMonth = new Date().getMonth(); // 0-based
+
 // ============================================================
 //  УТИЛИТЫ
 // ============================================================
@@ -270,6 +286,37 @@ function normalizePhone(p){
     if(d.length===11&&d[0]==='8') d='7'+d.slice(1);
     else if(d.length===10&&d[0]!=='7') d='7'+d;
     return d;
+}
+
+/** ИСПРАВЛЕНО: форматирует дату из строки "YYYY-MM-DD" или ISO в "ДД.ММ.ГГ" */
+function formatDate(raw){
+    if(!raw) return '—';
+    // Если это ISO строка типа "2026-06-10T21:00:00.000Z" — берём только дату
+    let dateStr = String(raw);
+    // Отрезаем время если есть
+    let datePart = dateStr.split('T')[0];
+    // Проверяем формат YYYY-MM-DD
+    let m = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(m) return `${m[3]}.${m[2]}.${m[1].slice(2)}`;
+    return datePart;
+}
+
+/** ИСПРАВЛЕНО: форматирует время из "HH:MM" или ISO или "1899-..." */
+function formatTime(raw){
+    if(!raw) return '—';
+    let s = String(raw);
+    // Если это ISO строка — вытащить время
+    if(s.includes('T')){
+        let timePart = s.split('T')[1];
+        if(timePart) return timePart.slice(0,5);
+        return '—';
+    }
+    // Если это просто "HH:MM"
+    let m = s.match(/^(\d{2}:\d{2})/);
+    if(m) return m[1];
+    // Если это "1899-12-30T..." (некорректное значение из Sheets)
+    if(s.includes('1899')) return '—';
+    return s.slice(0,5);
 }
 
 function showToast(msg, isErr){
@@ -324,14 +371,12 @@ function showDocModal(title,content){
 //  GAS / JSONP
 // ============================================================
 function callGas(action, params, cb){
-    // ФИX: проверяем, что cb — функция (защита от "cb is not a function")
     if(typeof cb !== 'function'){
         console.warn('callGas: callback is not a function for action', action);
         return;
     }
     let s=document.createElement('script');
     let name='_cb_'+Math.round(1e9*Math.random());
-    // ФИX: таймаут для защиты от зависших JSONP-запросов
     let timer = setTimeout(()=>{
         if(window[name]){ delete window[name]; if(s.parentNode) s.parentNode.removeChild(s); cb({success:false,error:'timeout'}); }
     }, 15000);
@@ -362,6 +407,17 @@ function syncDataFromServer(){
                 if(!/^\d{2}:\d{2}$/.test(workHours.end))   workHours.end='18:00';
                 currentRssUrl   = data.rss_feed_url || '';
                 if(currentRssUrl) localStorage.setItem('rssUrl', currentRssUrl);
+
+                // ИСПРАВЛЕНО: обновляем телефон и email из серверных данных
+                if(currentUser && data.usersList){
+                    let me = data.usersList.find(u=>u.login===currentUser.login);
+                    if(me){
+                        currentUser.fullName = me.fullName || currentUser.fullName;
+                        currentUser.phone    = me.phone    || currentUser.phone || '';
+                        currentUser.email    = me.email    || currentUser.email || '';
+                        persistUser();
+                    }
+                }
                 resolve();
             } else {
                 resolve();
@@ -370,57 +426,101 @@ function syncDataFromServer(){
     });
 }
 
-// ФИX: saveToServer — правильно сериализует данные, не дублирует пустые массивы
+// ИСПРАВЛЕНО: saveToServer — разделённые запросы с корректными данными
 function saveToServer(){
     let deviceId = localStorage.getItem('deviceId')||'';
 
-    // Сохраняем дела
+    // Дела
+    if(allCases.length > 0){
+        callGas('saveAllData',{
+            cases: JSON.stringify(allCases),
+            documents: JSON.stringify([]),
+            appointments: JSON.stringify([]),
+            blockedSlots: JSON.stringify([]),
+            newsArticles: JSON.stringify([]),
+            newsLinks: JSON.stringify([]),
+            workHours: JSON.stringify({}),
+            deviceId
+        }, r=>{ if(r&&!r.success) console.warn('cases save error',r); });
+    }
+
+    // Документы
+    if(allDocuments.length > 0){
+        callGas('saveAllData',{
+            cases: JSON.stringify([]),
+            documents: JSON.stringify(allDocuments),
+            appointments: JSON.stringify([]),
+            blockedSlots: JSON.stringify([]),
+            newsArticles: JSON.stringify([]),
+            newsLinks: JSON.stringify([]),
+            workHours: JSON.stringify({}),
+            deviceId
+        }, r=>{ if(r&&!r.success) console.warn('docs save error',r); });
+    }
+
+    // Заблокированные слоты
+    if(blockedSlots.length > 0){
+        callGas('saveAllData',{
+            cases: JSON.stringify([]),
+            documents: JSON.stringify([]),
+            appointments: JSON.stringify([]),
+            blockedSlots: JSON.stringify(blockedSlots),
+            newsArticles: JSON.stringify([]),
+            newsLinks: JSON.stringify([]),
+            workHours: JSON.stringify({}),
+            deviceId
+        }, r=>{ if(r&&!r.success) console.warn('slots save error',r); });
+    }
+
+    // Новости и ссылки
+    if(newsArticles.length > 0 || newsLinks.length > 0){
+        callGas('saveAllData',{
+            cases: JSON.stringify([]),
+            documents: JSON.stringify([]),
+            appointments: JSON.stringify([]),
+            blockedSlots: JSON.stringify([]),
+            newsArticles: JSON.stringify(newsArticles),
+            newsLinks: JSON.stringify(newsLinks),
+            workHours: JSON.stringify({}),
+            deviceId
+        }, r=>{ if(r&&!r.success) console.warn('news save error',r); });
+    }
+}
+
+// ИСПРАВЛЕНО: отдельная функция только для сохранения часов работы
+function saveWorkHoursToServer(start, end){
+    let deviceId = localStorage.getItem('deviceId')||'';
     callGas('saveAllData',{
-        cases: JSON.stringify(allCases),
+        cases: JSON.stringify([]),
         documents: JSON.stringify([]),
         appointments: JSON.stringify([]),
         blockedSlots: JSON.stringify([]),
         newsArticles: JSON.stringify([]),
         newsLinks: JSON.stringify([]),
-        workHours: JSON.stringify({}),
-        deviceId: deviceId
-    }, r=>{ if(r&&!r.success) console.warn('cases save error',r); });
+        workHours: JSON.stringify({start, end}),
+        deviceId
+    }, r=>{
+        if(r&&r.success){ showToast('Часы работы сохранены'); }
+        else { showToast('Ошибка сохранения часов', true); console.warn('workHours save error', r); }
+    });
+}
 
-    // Сохраняем документы
-    callGas('saveAllData',{
-        cases: JSON.stringify([]),
-        documents: JSON.stringify(allDocuments),
-        appointments: JSON.stringify([]),
-        blockedSlots: JSON.stringify([]),
-        newsArticles: JSON.stringify([]),
-        newsLinks: JSON.stringify([]),
-        workHours: JSON.stringify({}),
-        deviceId: deviceId
-    }, r=>{ if(r&&!r.success) console.warn('docs save error',r); });
-
-    // Сохраняем заблокированные слоты
-    callGas('saveAllData',{
-        cases: JSON.stringify([]),
-        documents: JSON.stringify([]),
-        appointments: JSON.stringify([]),
-        blockedSlots: JSON.stringify(blockedSlots),
-        newsArticles: JSON.stringify([]),
-        newsLinks: JSON.stringify([]),
-        workHours: JSON.stringify({}),
-        deviceId: deviceId
-    }, r=>{ if(r&&!r.success) console.warn('slots save error',r); });
-
-    // Сохраняем новости, ссылки и часы работы
+// ИСПРАВЛЕНО: отдельная функция только для сохранения ссылок
+function saveNewsLinksToServer(){
+    let deviceId = localStorage.getItem('deviceId')||'';
     callGas('saveAllData',{
         cases: JSON.stringify([]),
         documents: JSON.stringify([]),
         appointments: JSON.stringify([]),
         blockedSlots: JSON.stringify([]),
-        newsArticles: JSON.stringify(newsArticles),
+        newsArticles: JSON.stringify([]),
         newsLinks: JSON.stringify(newsLinks),
-        workHours: JSON.stringify(workHours),
-        deviceId: deviceId
-    }, r=>{ if(r&&!r.success) console.warn('news save error',r); });
+        workHours: JSON.stringify({}),
+        deviceId
+    }, r=>{
+        if(r&&r.success){ showToast('Ссылка сохранена'); }
+        else { showToast('Ошибка сохранения ссылки', true); console.warn('newsLinks save error', r); }
+    });
 }
 
 function persistUser(){
@@ -452,7 +552,6 @@ function showAppScreen(){
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appDashboard').classList.remove('hidden');
     buildBottomNav();
-    // ФИX: синхронизируем данные перед рендером, чтобы раздел "Дела" не был пустым
     syncDataFromServer().then(()=>{
         renderNews();
         renderDashboard();
@@ -568,22 +667,6 @@ function renderNews(){
     });
 }
 
-function forceLoadNewsFromSheet(){
-    showToast('Загрузка новостей из таблицы...');
-    callGas('forceLoadNews', {}, data => {
-        if(data && data.success && data.newsArticles){
-            newsArticles = data.newsArticles;
-            renderNews();
-            showToast('Загружено ' + newsArticles.length + ' новостей');
-            if(activeTab === 'admin' && currentUser && currentUser.role === 'admin'){
-                renderDashboard();
-            }
-        } else {
-            showToast('Ошибка загрузки новостей', true);
-        }
-    });
-}
-
 // ============================================================
 //  COMBO FIELD
 // ============================================================
@@ -601,11 +684,11 @@ function createComboField(inputId, placeholder, users, initialValue=''){
 
     function buildDd(q){
         let list=q ? users.filter(u=>(u.fullName||u.login).toLowerCase().includes(q.toLowerCase())) : users;
-        dd.innerHTML=list.map(u=>`<div class="combo-opt" data-val="${esc(u.login)}">${esc(u.fullName||u.login)}</div>`).join('');
+        dd.innerHTML=list.map(u=>`<div class="combo-opt" data-val="${esc(u.fullName||u.login)}" data-login="${esc(u.login)}">${esc(u.fullName||u.login)}</div>`).join('');
         dd.classList.toggle('open', list.length>0);
         dd.querySelectorAll('.combo-opt').forEach(opt=>{
-            opt.addEventListener('mousedown',e=>{ e.preventDefault(); inp.value=opt.dataset.val; dd.classList.remove('open'); });
-            opt.addEventListener('touchend', e=>{ e.preventDefault(); inp.value=opt.dataset.val; dd.classList.remove('open'); });
+            opt.addEventListener('mousedown',e=>{ e.preventDefault(); inp.value=opt.dataset.val; inp.dataset.login=opt.dataset.login; dd.classList.remove('open'); });
+            opt.addEventListener('touchend', e=>{ e.preventDefault(); inp.value=opt.dataset.val; inp.dataset.login=opt.dataset.login; dd.classList.remove('open'); });
         });
     }
 
@@ -620,7 +703,6 @@ function createComboField(inputId, placeholder, users, initialValue=''){
 //  ДЕЛА
 // ============================================================
 function attachCaseEvents(){
-    // ФИX: читаем статус из select в момент клика, а не из DOM-значения по умолчанию
     document.querySelectorAll('.update-case-btn').forEach(btn=>{
         btn.onclick=function(e){
             e.stopPropagation();
@@ -628,14 +710,12 @@ function attachCaseEvents(){
             let c=allCases.find(x=>x.id==id);
             if(!c) return;
             let row=this.closest('.case-item');
-            // ФИX: читаем выбранное значение select
             let statusSelect=row.querySelector('.status-select[data-id="'+id+'"]');
             if(statusSelect) c.status=statusSelect.value;
             let progressInput=row.querySelector('.progress-input[data-id="'+id+'"]');
             if(progressInput) c.progress=parseInt(progressInput.value)||0;
             if(c.status==='Завершено') c.result='Завершено администратором';
             (c.history=c.history||[]).push({date:new Date().toISOString().slice(0,10),status:c.status,stage:c.stage||'',docs:[]});
-            // ФИX: обновляем updatedAt для правильной записи в GAS
             c.updatedAt=new Date().toISOString();
             saveToServer();
             renderDashboard();
@@ -685,14 +765,19 @@ function attachCaseEvents(){
         ov.querySelector('#confirmCreateCaseBtn').onclick=()=>{
             let title=ov.querySelector('#newCaseTitle').value.trim();
             if(!title){ showToast('Введите название дела',true); return; }
-            let claimant=document.getElementById('newClaimantInput')?.value.trim()||'';
-            let defendant=document.getElementById('newDefendantInput')?.value.trim()||'';
+            // Отображаемое ФИО для карточки дела
+            let claimantInp  = document.getElementById('newClaimantInput');
+            let defendantInp = document.getElementById('newDefendantInput');
+            let claimant  = claimantInp?.value.trim()  || '';
+            let defendant = defendantInp?.value.trim() || '';
+            // Логин для привязки дела к пользователю (сохранён при выборе из списка)
+            let claimantLogin  = claimantInp?.dataset.login  || '';
+            let defendantLogin = defendantInp?.dataset.login || '';
             let category=ov.querySelector('#newCaseCategory').value;
             let baseId=Date.now();
-            let userLogins=allUsers.map(u=>u.login);
             allCases.push({id:baseId,userId:'admin',title,status:'В процессе',stage:'Новое',progress:0,result:null,history:[],claimant,defendant,category});
-            [claimant,defendant].filter(Boolean).forEach((login,i)=>{
-                if(userLogins.includes(login)){
+            [[claimantLogin,0],[defendantLogin,1]].forEach(([login,i])=>{
+                if(login){
                     allCases.push({id:baseId+(i+1),userId:login,title,status:'В процессе',stage:'Новое',progress:0,result:null,history:[],claimant,defendant,category,parentId:baseId});
                 }
             });
@@ -719,32 +804,182 @@ function attachDocAdminEvents(){
 }
 
 // ============================================================
-//  КАЛЕНДАРЬ
+//  КАЛЕНДАРЬ — ИСПРАВЛЕНО ПОЛНОСТЬЮ
 // ============================================================
+
+/** Названия месяцев */
+const MONTH_NAMES_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
 function renderCalendarUI(){
-    let today=new Date(), year=today.getFullYear(), month=today.getMonth();
-    let dim=new Date(year,month+1,0).getDate();
-    let apptDates=new Set(allAppointments.map(a=>a.date));
-    let html='<div class="cal-grid">'+['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div style="font-weight:700;text-align:center;font-size:11px;opacity:.6">${d}</div>`).join('');
-    let off=new Date(year,month,1).getDay()-1; if(off<0) off=6;
-    for(let i=0;i<off;i++) html+='<div></div>';
-    let todayStr=`${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-    for(let d=1;d<=dim;d++){
-        let ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        html+=`<div class="cal-day${apptDates.has(ds)?' has-appt':''}" data-date="${ds}">${d}</div>`;
-    }
-    html+='</div>';
-    document.getElementById('simpleCalendar').innerHTML=html;
+    let todayReal = new Date();
+    let todayStr  = `${todayReal.getFullYear()}-${String(todayReal.getMonth()+1).padStart(2,'0')}-${String(todayReal.getDate()).padStart(2,'0')}`;
 
-    // ФИX: загружаем appointments перед показом, чтобы отображались новые заявки
-    function refreshAndShowDate(date){
-        syncDataFromServer().then(()=>loadDate(date));
+    function buildCalGrid(year, month){
+        let dim = new Date(year, month+1, 0).getDate();
+        let apptDates = new Set(allAppointments.map(a=>a.date));
+        // Заголовки дней недели
+        let html = `<div class="cal-month-nav">
+            <button class="cal-nav-btn" id="calPrevBtn"><i class="fas fa-chevron-left"></i></button>
+            <div class="cal-month-label">${MONTH_NAMES_RU[month]} ${year}</div>
+            <button class="cal-nav-btn" id="calNextBtn"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="cal-grid">
+            ${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div style="font-weight:700;text-align:center;font-size:11px;opacity:.6">${d}</div>`).join('')}`;
+
+        let firstDow = new Date(year, month, 1).getDay(); // 0=вс
+        let off = (firstDow === 0) ? 6 : firstDow - 1;
+        for(let i=0;i<off;i++) html+='<div></div>';
+
+        for(let d=1;d<=dim;d++){
+            let ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            let cls='cal-day';
+            if(apptDates.has(ds)) cls+=' has-appt';
+            if(ds===todayStr) cls+=' today';
+            html+=`<div class="${cls}" data-date="${ds}">${d}</div>`;
+        }
+        html+='</div>';
+        return html;
     }
 
+    function rerenderGrid(){
+        let calEl = document.getElementById('simpleCalendar');
+        if(!calEl) return;
+        calEl.innerHTML = buildCalGrid(calViewYear, calViewMonth);
+
+        document.getElementById('calPrevBtn')?.addEventListener('click', e=>{
+            e.stopPropagation();
+            calViewMonth--;
+            if(calViewMonth < 0){ calViewMonth=11; calViewYear--; }
+            rerenderGrid();
+            // Восстанавливаем выделение если есть
+            let saved=localStorage.getItem('selectedDate');
+            if(saved){
+                let el=document.querySelector(`.cal-day[data-date="${saved}"]`);
+                if(el) el.classList.add('selected');
+            }
+        });
+        document.getElementById('calNextBtn')?.addEventListener('click', e=>{
+            e.stopPropagation();
+            calViewMonth++;
+            if(calViewMonth > 11){ calViewMonth=0; calViewYear++; }
+            rerenderGrid();
+            let saved=localStorage.getItem('selectedDate');
+            if(saved){
+                let el=document.querySelector(`.cal-day[data-date="${saved}"]`);
+                if(el) el.classList.add('selected');
+            }
+        });
+
+        // Вешаем обработчики на дни
+        document.querySelectorAll('.cal-day').forEach(el=>{
+            el.addEventListener('click', function(e){
+                e.stopPropagation();
+                document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+                this.classList.add('selected');
+                let selectedDate = this.dataset.date;
+                window.currentSelectedDate = selectedDate;
+                localStorage.setItem('selectedDate', selectedDate);
+                if(currentUser.role==='admin' && !planningMode){
+                    syncDataFromServer().then(()=>loadDate(selectedDate));
+                } else {
+                    loadDate(selectedDate);
+                }
+            });
+        });
+
+        // Восстанавливаем выделенную дату
+        let saved=localStorage.getItem('selectedDate');
+        let targetDay = null;
+        if(saved) targetDay=document.querySelector(`.cal-day[data-date="${saved}"]`);
+        if(!targetDay) targetDay=document.querySelector(`.cal-day[data-date="${todayStr}"]`);
+        if(!targetDay) targetDay=document.querySelector('.cal-day');
+        if(targetDay){
+            targetDay.classList.add('selected');
+            window.currentSelectedDate = targetDay.dataset.date;
+        }
+    }
+
+    rerenderGrid();
+
+    // Первичная загрузка слотов для выбранного дня
+    let saved=localStorage.getItem('selectedDate');
+    let initDate = saved || todayStr;
+    if(currentUser.role==='admin' && !planningMode){
+        syncDataFromServer().then(()=>loadDate(initDate));
+    } else {
+        loadDate(initDate);
+    }
+
+    // Кнопка переключения режима (только для admin)
+    let planBtn = document.getElementById('planningToggleBtn');
+    if(planBtn){
+        planBtn.innerHTML = planningMode
+            ?'<i class="fas fa-calendar-day"></i> Режим просмотра'
+            :'<i class="fas fa-calendar-plus"></i> Планирование';
+        planBtn.onclick = function(){
+            planningMode = !planningMode;
+            this.innerHTML = planningMode
+                ?'<i class="fas fa-calendar-day"></i> Режим просмотра'
+                :'<i class="fas fa-calendar-plus"></i> Планирование';
+            let sel=document.querySelector('.cal-day.selected');
+            let date=sel ? sel.dataset.date : initDate;
+            loadDate(date);
+        };
+    }
+
+    function loadDate(date){
+        if(!date) return;
+        if(currentUser.role==='admin'){
+            planningMode ? showPlanPanel(date) : showAdminAppts(date);
+        } else {
+            showClientSlots(date);
+        }
+    }
+
+    // ── Слоты для клиента ──
+    function showClientSlots(date){
+        window.currentSelectedDate = date;
+        let slotsArea = document.getElementById('timeSlotsArea');
+        if(!slotsArea) return;
+
+        let s=parseInt((workHours.start||'09:00').split(':')[0]);
+        let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
+        let slots=[];
+        for(let h=s; h<e; h++){
+            let timeStart=String(h).padStart(2,'0')+':00';
+            let isBlocked=blockedSlots.some(b=>{
+                if(b.date!==date) return false;
+                return (timeStart>=b.timeStart && timeStart<b.timeEnd);
+            });
+            if(!isBlocked) slots.push(timeStart);
+        }
+        let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date.split('-').reverse().join('.')}</div><div class="time-slots">`;
+        slots.forEach(t=>{
+            let bk=allAppointments.some(a=>a.date===date && a.time===t);
+            slotsHtml+=`<div class="slot ${bk?'booked':'free'}" data-time="${t}">${t} — ${(parseInt(t)+1)}:00 ${bk?'❌':'✅'}</div>`;
+        });
+        if(!slots.length) slotsHtml+=`<p style="opacity:.5">Нет доступных слотов</p>`;
+        slotsHtml+='</div></div>';
+        slotsArea.innerHTML=slotsHtml;
+
+        document.querySelectorAll('.slot.free').forEach(slot=>{
+            slot.addEventListener('click',function(e){
+                e.stopPropagation();
+                document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
+                window.selectedSlot={date:window.currentSelectedDate,time:this.dataset.time};
+                this.style.border='2px solid #FAC643';
+                this.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
+                showToast('Выбрано: '+this.dataset.time);
+            });
+        });
+    }
+
+    // ── Записи для администратора ──
     function showAdminAppts(date){
+        let slotsArea = document.getElementById('timeSlotsArea');
+        if(!slotsArea) return;
         let now=new Date();
-        // ФИX: re-read allAppointments после синхронизации
-        let apps=allAppointments.filter(a=>a.date===date).sort((a,b)=>a.time.localeCompare(b.time));
+        let apps=allAppointments.filter(a=>a.date===date).sort((a,b)=>String(a.time).localeCompare(String(b.time)));
         let pending  =apps.filter(a=>a.status==='pending');
         let confirmed=apps.filter(a=>a.status==='confirmed');
         let apptHtml='';
@@ -752,11 +987,12 @@ function renderCalendarUI(){
         if(pending.length){
             apptHtml+=`<div class="section-label"><i class="fas fa-hourglass-half"></i> Ожидают подтверждения</div>`;
             apptHtml+=pending.map(a=>{
-                let dt=new Date(`${date}T${a.time}`);
+                let timeStr = formatTime(a.time);
+                let dt=new Date(`${date}T${timeStr}:00`);
                 let soon=(dt-now)>=0&&(dt-now)<3600000;
                 return `<div class="appointment-card pending${soon?' upcoming-soon':''}" data-id="${a.id}">
                     <div class="flex-between">
-                        <span><strong>${esc(a.time)}</strong> — ${esc(a.clientName)}</span>
+                        <span><strong>${esc(timeStr)}</strong> — ${esc(a.clientName||a.userId)}</span>
                         <span style="font-size:11px;opacity:.6">⏳ ожидает</span>
                     </div>
                     ${a.topic?`<div class="appt-meta"><i class="fas fa-comment"></i> ${esc(a.topic)}</div>`:''}
@@ -771,11 +1007,12 @@ function renderCalendarUI(){
         if(confirmed.length){
             apptHtml+=`<div class="section-label"><i class="fas fa-check-circle"></i> Подтверждённые</div>`;
             apptHtml+=confirmed.map(a=>{
-                let dt=new Date(`${date}T${a.time}`);
+                let timeStr = formatTime(a.time);
+                let dt=new Date(`${date}T${timeStr}:00`);
                 let soon=(dt-now)>=0&&(dt-now)<3600000;
                 return `<div class="appointment-card confirmed${soon?' upcoming-soon':''}" data-id="${a.id}">
                     <div class="flex-between">
-                        <span><strong>${esc(a.time)}</strong> — ${esc(a.clientName)}</span>
+                        <span><strong>${esc(timeStr)}</strong> — ${esc(a.clientName||a.userId)}</span>
                         <span style="font-size:11px;color:#50dc78">✅</span>
                     </div>
                     ${a.topic?`<div class="appt-meta"><i class="fas fa-comment"></i> ${esc(a.topic)}</div>`:''}
@@ -788,12 +1025,11 @@ function renderCalendarUI(){
 
         if(!apps.length) apptHtml=`<p style="opacity:.5;margin-top:12px">Нет записей на этот день</p>`;
 
-        document.getElementById('timeSlotsArea').innerHTML=apptHtml;
+        slotsArea.innerHTML=apptHtml;
 
         document.querySelectorAll('.confirm-btn').forEach(btn=>{
             btn.onclick=e=>{ e.stopPropagation();
                 let a=allAppointments.find(x=>x.id==btn.dataset.id); if(!a) return;
-                // ФИX: сохраняем через специальный saveAllData с appointment update
                 a.status='confirmed';
                 saveToServer();
                 showToast('Запись подтверждена');
@@ -811,7 +1047,7 @@ function renderCalendarUI(){
             card.onclick=e=>{
                 if(e.target.closest('.appt-actions')) return;
                 let a=allAppointments.find(x=>x.id==card.dataset.id); if(!a) return;
-                showModal({title:'Клиент',message:`Имя: ${a.clientName}\nТелефон: ${a.phone||'—'}\nТема: ${a.topic||'—'}`,
+                showModal({title:'Клиент',message:`Имя: ${a.clientName||a.userId}\nТелефон: ${a.phone||'—'}\nТема: ${a.topic||'—'}`,
                     icon:'fas fa-user',confirmText:'Позвонить',showCancel:true,
                     onConfirm(){ if(a.phone) window.location.href='tel:'+a.phone; }
                 });
@@ -819,64 +1055,37 @@ function renderCalendarUI(){
         });
     }
 
-    function showClientSlots(date){
-        window.currentSelectedDate = date;
-        let s=parseInt((workHours.start||'09:00').split(':')[0]);
-        let e=parseInt((workHours.end  ||'18:00').split(':')[0]);
-        let slots=[];
-        for(let h=s; h<e; h++){
-            let timeStart=String(h).padStart(2,'0')+':00';
-            let isBlocked=blockedSlots.some(b=>{
-                if(b.date!==date) return false;
-                return (timeStart>=b.timeStart && timeStart<b.timeEnd);
-            });
-            if(!isBlocked) slots.push(timeStart);
-        }
-        let slotsHtml=`<div><div style="font-weight:600;margin-bottom:8px">Свободные слоты на ${date}</div><div class="time-slots">`;
-        slots.forEach(t=>{
-            let bk=allAppointments.some(a=>a.date===date && a.time===t);
-            slotsHtml+=`<div class="slot ${bk?'booked':'free'}" data-time="${t}">${t} - ${(parseInt(t)+1)}:00 ${bk?'❌':'✅'}</div>`;
-        });
-        slotsHtml+='</div></div>';
-        document.getElementById('timeSlotsArea').innerHTML=slotsHtml;
-        document.querySelectorAll('.slot.free').forEach(slot=>{
-            slot.addEventListener('click',function(e){
-                e.stopPropagation();
-                document.querySelectorAll('.slot.free').forEach(s=>{ s.style.border=''; s.style.boxShadow=''; });
-                window.selectedSlot={date:window.currentSelectedDate,time:this.dataset.time};
-                this.style.border='2px solid #FAC643';
-                this.style.boxShadow='0 0 10px rgba(250,198,67,.5)';
-                showToast('Выбрано: '+this.dataset.time);
-            });
-        });
-    }
-
+    // ── Панель планирования (блокировка времени) ──
     function showPlanPanel(date){
-        let area=document.getElementById('timeSlotsArea');
-        // ФИX: используем уникальные id для полей в панели планирования
-        area.innerHTML=`<div>
-            <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date}</div>
+        let slotsArea = document.getElementById('timeSlotsArea');
+        if(!slotsArea) return;
+
+        slotsArea.innerHTML=`<div>
+            <div style="font-weight:600;margin-bottom:12px">Блокировка времени на ${date.split('-').reverse().join('.')}</div>
             <div class="block-time-row">
-                <input type="time" id="blockStartTime" placeholder="Начало">
+                <input type="time" id="blockStartTime" class="time-input-safe" placeholder="Начало">
                 <span style="opacity:.5">—</span>
-                <input type="time" id="blockEndTime" placeholder="Конец">
+                <input type="time" id="blockEndTime" class="time-input-safe" placeholder="Конец">
                 <button id="addBlockTimeBtn" class="btn btn-small" style="flex-shrink:0;padding:8px 14px">+</button>
             </div>
             <div id="blockedPeriodsList"></div>
         </div>`;
 
-        // ФИX: stopPropagation на полях времени — не очищаем значения
-        area.querySelector('#blockStartTime').addEventListener('click', e=>e.stopPropagation());
-        area.querySelector('#blockEndTime').addEventListener('click', e=>e.stopPropagation());
-        area.querySelector('#blockStartTime').addEventListener('touchstart', e=>e.stopPropagation(), {passive:true});
-        area.querySelector('#blockEndTime').addEventListener('touchstart', e=>e.stopPropagation(), {passive:true});
-        area.querySelector('#blockStartTime').addEventListener('focus', e=>e.stopPropagation());
-        area.querySelector('#blockEndTime').addEventListener('focus', e=>e.stopPropagation());
+        // ИСПРАВЛЕНО: предотвращаем всплытие событий касания с полей времени
+        // чтобы swipe-навигация не перехватывала касание
+        let startInp = slotsArea.querySelector('#blockStartTime');
+        let endInp   = slotsArea.querySelector('#blockEndTime');
+        [startInp, endInp].forEach(inp=>{
+            if(!inp) return;
+            ['click','focus','mousedown','touchstart','touchmove','touchend'].forEach(ev=>{
+                inp.addEventListener(ev, e=>e.stopPropagation(), {passive: ev.startsWith('touch')});
+            });
+        });
 
         function renderPeriods(){
             let list=document.getElementById('blockedPeriodsList'); if(!list) return;
             let periods=blockedSlots.filter(b=>b.date===date);
-            if(!periods.length){ list.innerHTML='<p style="opacity:.5;margin-top:8px">Нет периодов</p>'; return; }
+            if(!periods.length){ list.innerHTML='<p style="opacity:.5;margin-top:8px">Нет заблокированных периодов</p>'; return; }
             list.innerHTML=periods.map((p,i)=>`
                 <div class="period-row">
                     <span style="font-weight:600">${p.timeStart} — ${p.timeEnd}</span>
@@ -889,16 +1098,18 @@ function renderCalendarUI(){
             list.querySelectorAll('.del-period').forEach(btn=>{
                 btn.onclick=e=>{
                     e.stopPropagation();
-                    let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx];
-                    if(!p) return;
+                    let idx=+btn.dataset.i, periods2=blockedSlots.filter(b=>b.date===date);
+                    let p=periods2[idx]; if(!p) return;
                     blockedSlots=blockedSlots.filter(b=>b!==p);
+                    // ИСПРАВЛЕНО: используем saveToServer который сохраняет blockedSlots
                     saveToServer(); renderPeriods(); showToast('Удалено');
                 };
             });
             list.querySelectorAll('.edit-period').forEach(btn=>{
                 btn.onclick=e=>{
                     e.stopPropagation();
-                    let idx=+btn.dataset.i, p=blockedSlots.filter(b=>b.date===date)[idx]; if(!p) return;
+                    let idx=+btn.dataset.i, periods2=blockedSlots.filter(b=>b.date===date);
+                    let p=periods2[idx]; if(!p) return;
                     let newStart=prompt("Новое время начала",p.timeStart);
                     let newEnd=prompt("Новое время окончания",p.timeEnd);
                     if(newStart&&newEnd){ p.timeStart=newStart; p.timeEnd=newEnd; saveToServer(); renderPeriods(); showToast('Обновлено'); }
@@ -908,71 +1119,17 @@ function renderCalendarUI(){
 
         renderPeriods();
 
-        area.querySelector('#addBlockTimeBtn').onclick=function(e){
+        slotsArea.querySelector('#addBlockTimeBtn').onclick=function(e){
             e.preventDefault(); e.stopPropagation();
-            let s=area.querySelector('#blockStartTime').value;
-            let en=area.querySelector('#blockEndTime').value;
-            if(!s||!en){ showToast('Выберите время',true); return; }
-            blockedSlots.push({id:Date.now(),date,timeStart:s,timeEnd:en});
+            let s2=slotsArea.querySelector('#blockStartTime').value;
+            let en=slotsArea.querySelector('#blockEndTime').value;
+            if(!s2||!en){ showToast('Выберите время начала и конца',true); return; }
+            blockedSlots.push({id:Date.now(),date,timeStart:s2,timeEnd:en});
             saveToServer(); renderPeriods();
-            area.querySelector('#blockStartTime').value='';
-            area.querySelector('#blockEndTime').value='';
+            slotsArea.querySelector('#blockStartTime').value='';
+            slotsArea.querySelector('#blockEndTime').value='';
             showToast('Период заблокирован');
         };
-    }
-
-    function loadDate(date){
-        if(currentUser.role==='admin'){
-            planningMode ? showPlanPanel(date) : showAdminAppts(date);
-        } else {
-            showClientSlots(date);
-        }
-    }
-
-    document.querySelectorAll('.cal-day').forEach(el=>{
-        el.addEventListener('click', function(e){
-            e.stopPropagation();
-            document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
-            this.classList.add('selected');
-            let selectedDate=this.dataset.date;
-            window.currentSelectedDate=selectedDate;
-            localStorage.setItem('selectedDate',selectedDate);
-            // ФИX: для admin — всегда синхронизируем перед показом
-            if(currentUser.role==='admin' && !planningMode){
-                refreshAndShowDate(selectedDate);
-            } else {
-                loadDate(selectedDate);
-            }
-        });
-    });
-
-    let planBtn=document.getElementById('planningToggleBtn');
-    if(planBtn){
-        planBtn.onclick=function(){
-            planningMode=!planningMode;
-            this.innerHTML=planningMode
-                ?'<i class="fas fa-calendar-day"></i> Режим просмотра'
-                :'<i class="fas fa-calendar-plus"></i> Планирование';
-            let sel=document.querySelector('.cal-day.selected');
-            if(sel) loadDate(sel.dataset.date);
-        };
-        planBtn.innerHTML=planningMode
-            ?'<i class="fas fa-calendar-day"></i> Режим просмотра'
-            :'<i class="fas fa-calendar-plus"></i> Планирование';
-    }
-
-    let savedDate=localStorage.getItem('selectedDate');
-    let targetDay=null;
-    if(savedDate) targetDay=document.querySelector(`.cal-day[data-date="${savedDate}"]`);
-    if(!targetDay) targetDay=document.querySelector(`.cal-day[data-date="${todayStr}"]`);
-    if(!targetDay) targetDay=document.querySelector('.cal-day');
-    if(targetDay){
-        targetDay.classList.add('selected');
-        if(currentUser.role==='admin' && !planningMode){
-            refreshAndShowDate(targetDay.dataset.date);
-        } else {
-            loadDate(targetDay.dataset.date);
-        }
     }
 }
 
@@ -1015,7 +1172,6 @@ function renderDashboard(){
                         <div class="flex-between"><h3>${esc(c.title)}</h3><span class="status-badge">${esc(c.status)}</span></div>
                         <p style="font-size:12px;opacity:.6">Заявитель: ${esc(c.claimant||'—')} | Ответчик: ${esc(c.defendant||'—')}</p>`;
                     if(c.status!=='Завершено'){
-                        // ФИX: добавлен data-id на select и input для надёжного поиска
                         html+=`<p>${esc(c.stage||'')}</p>
                             <div class="flex-row" style="margin-top:8px;flex-wrap:wrap">
                             <select class="status-select" data-id="${c.id}" style="flex:1;min-width:120px">
@@ -1098,6 +1254,7 @@ function renderDashboard(){
                 </div><h3>Мои документы</h3><div id="userDocsList"></div>`;
         }
     } else if(activeTab==='userSettings'){
+        // ИСПРАВЛЕНО: подтягиваем телефон/email из currentUser (обновлён при syncData)
         html=`<h2><i class="fas fa-user-cog"></i> Настройки</h2>
         <div class="card"><h3>Личные данные</h3>
             <input type="text"  id="editFullName" placeholder="ФИО"    value="${esc(currentUser.fullName||'')}">
@@ -1111,11 +1268,14 @@ function renderDashboard(){
             <input type="password" id="newPassConfirm" placeholder="Подтвердите новый пароль">
             <button id="changePasswordBtn" class="btn btn-small">Сменить пароль</button>
         </div>
-        <div class="card"><h3>Документы</h3><div class="docs-buttons">
-            <button id="downloadAgreementBtn"     class="btn-outline btn-small">Пользовательское соглашение (PDF)</button>
-            <button id="downloadPrivacyBtn"       class="btn-outline btn-small">Политика конфиденциальности (PDF)</button>
-            <button id="downloadConsentBtn"       class="btn-outline btn-small">Согласие на обработку ПД (PDF)</button>
-        </div></div>`;
+        <div class="card"><h3>Документы</h3>
+            <p style="font-size:12px;opacity:.65;margin-bottom:12px">Документы генерируются и хранятся в вашей личной папке на Google Drive.</p>
+            <div class="docs-buttons">
+                <button id="downloadAgreementBtn" class="btn-outline btn-small"><i class="fas fa-file-pdf"></i> Пользовательское соглашение</button>
+                <button id="downloadPrivacyBtn"   class="btn-outline btn-small"><i class="fas fa-file-pdf"></i> Политика конфиденциальности</button>
+                <button id="downloadConsentBtn"   class="btn-outline btn-small"><i class="fas fa-file-pdf"></i> Согласие на обработку ПД</button>
+            </div>
+        </div>`;
     } else if(activeTab==='admin'&&isAdmin){
         let rssDisplayValue=currentRssUrl||localStorage.getItem('rssUrl')||'';
         html=`<h2><i class="fas fa-cog"></i> Настройки</h2>
@@ -1127,9 +1287,9 @@ function renderDashboard(){
         </div>
         <div class="card"><h3>Часы работы</h3>
             <div class="flex-row">
-                <input type="time" id="workStart" value="${workHours.start}" style="flex:1;min-width:0;margin-bottom:0">
+                <input type="time" id="workStart" value="${workHours.start}" class="time-input-safe" style="flex:1;min-width:0;margin-bottom:0">
                 <span>—</span>
-                <input type="time" id="workEnd"   value="${workHours.end}"   style="flex:1;min-width:0;margin-bottom:0">
+                <input type="time" id="workEnd"   value="${workHours.end}"   class="time-input-safe" style="flex:1;min-width:0;margin-bottom:0">
                 <button id="saveWorkHoursBtn" class="btn-outline btn-small">Сохранить</button>
             </div>
         </div>
@@ -1142,7 +1302,7 @@ function renderDashboard(){
             <div style="margin-top:10px">
                 <button id="refreshNewsBtn" class="btn-outline btn-small"><i class="fas fa-sync-alt"></i> Обновить новости</button>
             </div>
-            <div style="margin-top:8px;font-size:11px;opacity:0.6;">📌 Текущий RSS URL: ${esc(rssDisplayValue)||'не задан'}</div>
+            <div style="margin-top:8px;font-size:11px;opacity:0.6;">📌 Текущий: ${esc(rssDisplayValue)||'не задан'}</div>
         </div>
         <div class="card"><h3>Ссылки</h3>
             <div id="linksList"></div>
@@ -1177,7 +1337,8 @@ function renderUserDocs(){
     c.innerHTML=docs.length
         ? docs.map(d=>`<div class="file-item">
             <span><i class="fas fa-file"></i> ${esc(d.fileName)} (${d.uploadDate||''})</span>
-            <button class="btn-outline btn-small view-doc-btn" data-id="${d.id}">Просмотреть</button>
+            ${d.fileId?`<a href="https://drive.google.com/file/d/${esc(d.fileId)}/view" target="_blank" class="btn-outline btn-small" style="text-decoration:none">Открыть</a>`
+            :`<button class="btn-outline btn-small view-doc-btn" data-id="${d.id}">Просмотреть</button>`}
         </div>`).join('')
         : '<p>Нет документов</p>';
     c.querySelectorAll('.view-doc-btn').forEach(btn=>{
@@ -1196,17 +1357,28 @@ function renderAdminLinks(){
             <button class="btn-outline btn-small del-link" data-i="${i}">Удалить</button>
         </div>`).join('');
     div.querySelectorAll('.del-link').forEach(btn=>{
-        btn.onclick=()=>{ newsLinks.splice(+btn.dataset.i,1); saveToServer(); renderAdminLinks(); showToast('Удалено'); };
+        btn.onclick=()=>{
+            newsLinks.splice(+btn.dataset.i,1);
+            // ИСПРАВЛЕНО: используем отдельную функцию для сохранения ссылок
+            saveNewsLinksToServer();
+            renderAdminLinks();
+        };
     });
-    document.getElementById('addLinkBtn')?.addEventListener('click',()=>{
-        let n=document.getElementById('newLinkName').value;
-        let u=document.getElementById('newLinkUrl').value;
-        if(!n||!u){ showToast('Заполните оба поля',true); return; }
-        newsLinks.push({name:n,url:u});
-        saveToServer(); renderAdminLinks(); showToast('Добавлено');
-        document.getElementById('newLinkName').value='';
-        document.getElementById('newLinkUrl').value='';
-    });
+
+    // ИСПРАВЛЕНО: кнопка добавления ссылки — используем saveNewsLinksToServer
+    let addBtn = document.getElementById('addLinkBtn');
+    if(addBtn){
+        addBtn.onclick = ()=>{
+            let n=document.getElementById('newLinkName').value.trim();
+            let u=document.getElementById('newLinkUrl').value.trim();
+            if(!n||!u){ showToast('Заполните оба поля',true); return; }
+            newsLinks.push({name:n,url:u});
+            saveNewsLinksToServer();
+            renderAdminLinks();
+            document.getElementById('newLinkName').value='';
+            document.getElementById('newLinkUrl').value='';
+        };
+    }
 }
 
 function renderClientsList(){
@@ -1222,7 +1394,6 @@ function renderClientsList(){
                     <strong>${esc(user.fullName||user.login)}</strong><br>
                     <span style="font-size:11px;opacity:0.6">${esc(user.login)}</span>
                 </div>
-                <!-- ФИX: только кнопка карандаш открывает детали, вся строка — нет -->
                 <button class="btn-outline btn-small edit-client-btn" data-id="${esc(user.id)}" style="padding:8px 12px">✏️</button>
             </div>
             <div class="client-details" id="client-details-${esc(user.id)}">
@@ -1236,7 +1407,6 @@ function renderClientsList(){
             </div>
         </div>`).join('');
 
-    // ФИX: только кнопка карандаш — toggle деталей
     div.querySelectorAll('.edit-client-btn').forEach(btn=>{
         btn.addEventListener('click', e=>{
             e.stopPropagation();
@@ -1246,7 +1416,6 @@ function renderClientsList(){
         });
     });
 
-    // ФИX: stopPropagation на input-полях клиентов, чтобы не закрывало панель
     div.querySelectorAll('.client-details input').forEach(inp=>{
         inp.addEventListener('click', e=>e.stopPropagation());
         inp.addEventListener('focus', e=>e.stopPropagation());
@@ -1309,22 +1478,37 @@ function attachDynamicEvents(){
     });
 
     // Запись на приём (клиент)
-    if(activeTab==='calendar'&&currentUser.role!=='admin'){
+    if(activeTab==='calendar' && currentUser.role!=='admin'){
+        // ИСПРАВЛЕНО: корректное отображение записей клиента
         let myApps=allAppointments.filter(a=>a.userId===currentUser.login);
         let ld=document.getElementById('myAppointmentsList');
-        if(ld) ld.innerHTML=myApps.length
-            ? myApps.map(a=>`<div class="card"><i class="fas fa-clock"></i> ${a.date} ${a.time} — ${a.status==='pending'?'⏳ ожидает':'✅ подтверждён'}</div>`).join('')
-            : '<p style="opacity:.5">Нет записей</p>';
+        if(ld){
+            if(myApps.length){
+                ld.innerHTML=myApps.map(a=>{
+                    let dateStr = formatDate(a.date);
+                    let timeStr = formatTime(a.time);
+                    let isConfirmed = a.status==='confirmed';
+                    return `<div class="my-appt-card${isConfirmed?' confirmed':''}">
+                        <div><strong><i class="fas fa-calendar"></i> ${dateStr}</strong> в <strong>${timeStr}</strong></div>
+                        ${a.topic?`<div class="my-appt-status"><i class="fas fa-comment"></i> ${esc(a.topic)}</div>`:''}
+                        <div class="my-appt-status">${isConfirmed?'✅ Подтверждена':'⏳ Ожидает подтверждения'}</div>
+                    </div>`;
+                }).join('');
+            } else {
+                ld.innerHTML='<p style="opacity:.5">Нет записей</p>';
+            }
+        }
 
         document.getElementById('bookSlotBtn')?.addEventListener('click',()=>{
-            if(!window.selectedSlot){ showToast('Выберите время',true); return; }
+            if(!window.selectedSlot){ showToast('Выберите время на календаре',true); return; }
             let {date,time}=window.selectedSlot;
             let isBlocked=blockedSlots.some(b=>b.date===date&&b.timeStart<=time&&b.timeEnd>=time);
-            if(isBlocked){ showToast('Слот занят',true); return; }
+            if(isBlocked){ showToast('Слот заблокирован',true); return; }
             let alreadyBooked=allAppointments.some(a=>a.date===date&&a.time===time&&a.userId===currentUser.login);
-            if(alreadyBooked){ showToast('Вы уже записаны',true); return; }
+            if(alreadyBooked){ showToast('Вы уже записаны на это время',true); return; }
             let ov=document.createElement('div'); ov.className='modal-overlay';
             ov.innerHTML=`<div class="modal-container"><h3>Запись на приём</h3>
+                <p style="opacity:.7;font-size:13px;margin-bottom:12px">${date.split('-').reverse().join('.')} в ${time}</p>
                 <input id="apTopic" placeholder="Тема обращения">
                 <div class="modal-buttons">
                     <button id="apConfirm" class="btn">Записаться</button>
@@ -1343,7 +1527,7 @@ function attachDynamicEvents(){
                         showModal({title:'Запись создана',message:`${formattedDate} в ${time}`,icon:'fas fa-calendar-check',confirmText:'Понятно'});
                         syncDataFromServer().then(()=>renderDashboard());
                     } else {
-                        showToast('Ошибка при сохранении записи',true);
+                        showToast('Ошибка при создании записи',true);
                     }
                 });
                 ov.remove();
@@ -1353,41 +1537,42 @@ function attachDynamicEvents(){
         });
     }
 
-    // ФИX: поля времени — только stopPropagation, не очищать значения
+    // ИСПРАВЛЕНО: поля времени часов работы — stopPropagation
     let ws=document.getElementById('workStart'), we=document.getElementById('workEnd');
     if(ws&&we){
         [ws,we].forEach(inp=>{
-            inp.addEventListener('click',    e=>e.stopPropagation());
-            inp.addEventListener('focus',    e=>e.stopPropagation());
-            inp.addEventListener('mousedown',e=>e.stopPropagation());
-            inp.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
+            ['click','focus','mousedown','touchstart','touchmove','touchend'].forEach(ev=>{
+                inp.addEventListener(ev, e=>e.stopPropagation(), {passive: ev.startsWith('touch')});
+            });
         });
     }
 
+    // ИСПРАВЛЕНО: сохранение часов работы через отдельную функцию
     document.getElementById('saveWorkHoursBtn')?.addEventListener('click',()=>{
         let s=document.getElementById('workStart').value;
         let e=document.getElementById('workEnd').value;
-        if(!s||!e){ showToast('Укажите время',true); return; }
+        if(!s||!e){ showToast('Укажите время начала и конца',true); return; }
         workHours.start=s; workHours.end=e;
-        saveToServer(); showToast('Часы работы сохранены');
+        saveWorkHoursToServer(s, e);
     });
 
     document.getElementById('saveRssUrlBtn')?.addEventListener('click',()=>{
         let url=document.getElementById('rssUrlInput').value.trim();
         if(!url){ showToast('Введите URL',true); return; }
         callGas('saveRssUrl',{url,deviceId:localStorage.getItem('deviceId')||''},res=>{
-            if(res&&res.success){ currentRssUrl=url; localStorage.setItem('rssUrl',url); showToast('RSS URL сохранён'); }
+            if(res&&res.success){ currentRssUrl=url; localStorage.setItem('rssUrl',url); showToast('RSS URL сохранён'); renderDashboard(); }
             else showToast('Ошибка сохранения',true);
         });
     });
     document.getElementById('clearRssUrlBtn')?.addEventListener('click',()=>{
         document.getElementById('rssUrlInput').value='';
         callGas('saveRssUrl',{url:'',deviceId:localStorage.getItem('deviceId')||''},res=>{
-            if(res&&res.success){ currentRssUrl=''; localStorage.removeItem('rssUrl'); showToast('RSS URL очищен'); }
+            if(res&&res.success){ currentRssUrl=''; localStorage.removeItem('rssUrl'); showToast('RSS URL очищен'); renderDashboard(); }
             else showToast('Ошибка',true);
         });
     });
     document.getElementById('refreshNewsBtn')?.addEventListener('click',()=>{
+        showToast('Обновление новостей...');
         callGas('refreshNews',{deviceId:localStorage.getItem('deviceId')||''},res=>{
             if(res&&res.success){
                 showToast('Новости обновлены ('+(res.added||0)+' записей)');
@@ -1400,7 +1585,7 @@ function attachDynamicEvents(){
         let op=document.getElementById('oldPassword').value;
         let np=document.getElementById('newPassword').value;
         let nc=document.getElementById('newPassConfirm').value;
-        if(!op||!np){ showToast('Заполните поля',true); return; }
+        if(!op||!np){ showToast('Заполните все поля пароля',true); return; }
         if(np!==nc){ showToast('Пароли не совпадают',true); return; }
         callGas('changePassword',{userId:currentUser.id,oldPassword:op,newPassword:np,deviceId:localStorage.getItem('deviceId')||''},res=>{
             if(res&&res.success){ showToast('Пароль изменён'); ['oldPassword','newPassword','newPassConfirm'].forEach(id=>{ let el=document.getElementById(id); if(el) el.value=''; }); }
@@ -1412,7 +1597,7 @@ function attachDynamicEvents(){
         let op=document.getElementById('adminOldPass').value;
         let np=document.getElementById('adminNewPass').value;
         let nc=document.getElementById('adminNewPassConf').value;
-        if(!op||!np){ showToast('Заполните поля',true); return; }
+        if(!op||!np){ showToast('Заполните все поля пароля',true); return; }
         if(np!==nc){ showToast('Пароли не совпадают',true); return; }
         callGas('changePassword',{userId:currentUser.id,oldPassword:op,newPassword:np,deviceId:localStorage.getItem('deviceId')||''},res=>{
             if(res&&res.success){ showToast('Пароль изменён'); ['adminOldPass','adminNewPass','adminNewPassConf'].forEach(id=>{ let el=document.getElementById(id); if(el) el.value=''; }); }
@@ -1431,10 +1616,6 @@ function attachDynamicEvents(){
         callGas('updateOwnProfile',{userId:currentUser.id,fullName:newFullName,phone:newPhone,email:newEmail,deviceId:localStorage.getItem('deviceId')},res=>{
             if(res&&res.success){
                 showToast('Данные обновлены');
-                // ФИX: вызываем генерацию PDF последовательно, с корректными docType
-                generateDocumentSafe('agreement');
-                generateDocumentSafe('privacy');
-                generateDocumentSafe('personal-consent');
                 renderDashboard();
             } else {
                 currentUser.fullName=oldFN; currentUser.phone=oldPh; currentUser.email=oldEm;
@@ -1445,20 +1626,30 @@ function attachDynamicEvents(){
         });
     });
 
-    // ФИX: добавлена третья кнопка скачивания (Согласие на обработку ПД)
-    document.getElementById('downloadAgreementBtn')?.addEventListener('click',()=>window.open('https://spoiler038.github.io/sovet-yurista/docs/user-agreement.pdf','_blank'));
-    document.getElementById('downloadPrivacyBtn')  ?.addEventListener('click',()=>window.open('https://spoiler038.github.io/sovet-yurista/docs/privacy-policy.pdf','_blank'));
-    document.getElementById('downloadConsentBtn')  ?.addEventListener('click',()=>window.open('https://spoiler038.github.io/sovet-yurista/docs/personal-data-consent.pdf','_blank'));
+    // ИСПРАВЛЕНО: PDF-документы — генерируем на лету через GAS и открываем ссылку на Drive
+    document.getElementById('downloadAgreementBtn')?.addEventListener('click',()=>generateAndOpenDoc('agreement'));
+    document.getElementById('downloadPrivacyBtn')  ?.addEventListener('click',()=>generateAndOpenDoc('privacy'));
+    document.getElementById('downloadConsentBtn')  ?.addEventListener('click',()=>generateAndOpenDoc('personal-consent'));
 }
 
-// ФИX: безопасная обёртка для генерации PDF-документов
-// Решает "cb is not a function" — callGas всегда получает функцию-колбэк
-function generateDocumentSafe(docType){
+/**
+ * ИСПРАВЛЕНО: генерируем PDF через GAS и открываем ссылку на Google Drive.
+ * Показываем спиннер пока идёт генерация.
+ */
+function generateAndOpenDoc(docType){
+    let labels = {
+        'agreement':       'Пользовательское соглашение',
+        'privacy':         'Политика конфиденциальности',
+        'personal-consent':'Согласие на обработку ПД'
+    };
+    showToast('Генерация документа "'+labels[docType]+'"...');
     callGas('generateDocument',{docType,deviceId:localStorage.getItem('deviceId')||''},res=>{
-        if(res&&res.success){
-            console.log('Документ сгенерирован:',docType,res.fileName);
+        if(res && res.success && res.fileId){
+            let driveUrl = `https://drive.google.com/file/d/${res.fileId}/view`;
+            window.open(driveUrl, '_blank');
+            showToast('Документ готов!');
         } else {
-            console.warn('Ошибка генерации документа',docType, res&&res.error);
+            showToast('Ошибка генерации документа: '+(res&&res.error||'неизвестно'), true);
         }
     });
 }
@@ -1493,27 +1684,38 @@ function initNavigation(){
         casesSubTab='current'; selectedArchiveCase=null; planningMode=false;
         renderDashboard();
     };
+
+    // ИСПРАВЛЕНО: swipe навигация — игнорируем касания внутри input[type=time], input, select
     let dash=document.getElementById('appDashboard');
     if(dash){
-        let txStart=0;
-        dash.ontouchstart=e=>{ txStart=e.changedTouches[0].screenX; };
-        dash.ontouchend=e=>{
-            let diff=e.changedTouches[0].screenX-txStart;
-            if(Math.abs(diff)<50) return;
+        let txStart=0, tyStart=0, swipeTarget=null;
+        dash.addEventListener('touchstart', e=>{
+            // Не начинаем swipe если касание началось на поле ввода
+            swipeTarget = e.target;
+            txStart=e.changedTouches[0].screenX;
+            tyStart=e.changedTouches[0].screenY;
+        }, {passive:true});
+        dash.addEventListener('touchend', e=>{
+            // Игнорируем swipe если начался на input/select/textarea или button
+            if(swipeTarget && (swipeTarget.tagName==='INPUT'||swipeTarget.tagName==='SELECT'||swipeTarget.tagName==='TEXTAREA'||swipeTarget.tagName==='BUTTON'||swipeTarget.closest('input')||swipeTarget.closest('button'))) return;
+            let diffX=e.changedTouches[0].screenX-txStart;
+            let diffY=e.changedTouches[0].screenY-tyStart;
+            // Если вертикальное движение больше горизонтального — не свайп
+            if(Math.abs(diffY) > Math.abs(diffX)) return;
+            if(Math.abs(diffX)<60) return;
             let isAdmin=currentUser&&currentUser.role==='admin';
             let order=isAdmin?['cases','calendar','documents','admin']:['cases','calendar','documents','userSettings'];
             let idx=order.indexOf(activeTab);
-            if(diff>50&&idx>0) activeTab=order[idx-1];
-            if(diff<-50&&idx<order.length-1) activeTab=order[idx+1];
+            if(diffX>0&&idx>0) activeTab=order[idx-1];
+            if(diffX<0&&idx<order.length-1) activeTab=order[idx+1];
             buildBottomNav(); renderDashboard(); history.pushState({tab:activeTab},'','#'+activeTab);
-        };
+        }, {passive:true});
     }
     let h=window.location.hash.slice(1);
     activeTab=(h&&['cases','calendar','documents','admin','userSettings'].includes(h))?h:'cases';
 }
 
 async function init(){
-    // Загружаем новости
     await new Promise(resolve=>{
         callGas('forceLoadNews',{},data=>{
             if(data&&data.success&&data.newsArticles){ newsArticles=data.newsArticles; }
